@@ -1,0 +1,86 @@
+#include "OPAQUEWrapper.h"
+#include <esp_err.h>
+#include <stdbool.h>
+#include <esp_log.h>
+
+static const char* UserId = "1293";
+static const char* ServerId = "31415926535";
+static const char* Context = "SSOT/OPAQUE";
+
+void init() { if(sodium_init() < 0) { ESP_ERROR_CHECK(ESP_ERR_HW_CRYPTO_BASE); } }
+
+int ClientRegister(const char* password, uint8_t alpha[crypto_core_ristretto255_BYTES], uint8_t** outSec, uint16_t* outPwdLen)
+{
+    const uint16_t pwdLen = (uint16_t)strlen(password);
+    const uint8_t *pwd = (const uint8_t*) password;
+
+    uint8_t *sec = malloc(OPAQUE_REGISTER_USER_SEC_LEN + pwdLen);
+    if(!sec) { return -1; }
+    int oRes = opaque_CreateRegistrationRequest(pwd, pwdLen, sec, alpha);
+    if(oRes != 0)
+    {
+        ESP_LOGI("GENERAL", "OPAQUE Registration Request failed. %d", oRes);
+        free(sec);
+        return -1;
+    }
+
+    *outSec = sec;
+    *outPwdLen = pwdLen;
+    return 0;
+}
+
+int ClientFinalizeRegister(const uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN], uint8_t* sec, uint16_t pwdLen, uint8_t regRec[OPAQUE_REGISTRATION_RECORD_LEN], uint8_t exportKey[crypto_hash_sha512_BYTES])
+{
+    Opaque_Ids ids = 
+    {
+        .idU_len = (uint16_t)strlen(UserId),
+        .idU = (uint8_t*)UserId,
+        .idS_len = (uint16_t)strlen(ServerId),
+        .idS = (uint8_t*)ServerId
+    };
+
+    if(opaque_FinalizeRequest(sec, rPub, &ids, regRec, exportKey) != 0) { return -1; }
+
+    sodium_memzero(sec, OPAQUE_REGISTER_USER_SEC_LEN + pwdLen);
+    free(sec);
+    return 0;
+}
+
+int ClientLogin(const char* password, ClientState_t* state, uint8_t ke1[OPAQUE_USER_SESSION_PUBLIC_LEN])
+{
+    const uint16_t pwdLen = (uint16_t)strlen(password);
+    const uint8_t *pwd = (const uint8_t*) password;
+
+    state->sec = malloc(OPAQUE_USER_SESSION_SECRET_LEN + pwdLen);
+    if(!state->sec) { return -1; }
+    state->pwdLen = pwdLen;
+
+    if(opaque_CreateCredentialRequest(pwd, pwdLen, state->sec, ke1) != 0)
+    {
+        free(state->sec);
+        state->sec = NULL;
+        return -1;
+    }
+    return 0;
+}
+
+int ClientFinalizeLogin(ClientState_t* state, const uint8_t ke2[OPAQUE_SERVER_SESSION_LEN], uint8_t sk[OPAQUE_SHARED_SECRETBYTES], uint8_t authU[crypto_auth_hmacsha512_BYTES], uint8_t exportKey[crypto_hash_sha512_BYTES])
+{
+    if(!state || !state->sec) { return -1; }
+
+    Opaque_Ids ids = 
+    {
+        .idU_len = (uint16_t)strlen(UserId),
+        .idU = (uint8_t*)UserId,
+        .idS_len = (uint16_t)strlen(ServerId),
+        .idS = (uint8_t*)ServerId
+    };
+
+    const uint8_t* context = (const uint8_t*)Context;
+    const uint16_t contextLen = (uint16_t)strlen(Context);
+
+    if(opaque_RecoverCredentials(ke2, state->sec, context, contextLen, &ids, sk, authU, exportKey) != 0) { return -1; }
+    sodium_memzero(state->sec, OPAQUE_USER_SESSION_SECRET_LEN + state->pwdLen);
+    free(state->sec);
+    return 0;
+}
