@@ -31,6 +31,14 @@ esp_err_t GetDeviceMAC(uint8_t* macAddress)
     return esp_efuse_mac_get_default(macAddress);
 }
 
+esp_err_t GetDeviceMACAsString(char* macAddress)
+{
+    uint8_t macAddr[6];
+    esp_err_t err = esp_efuse_mac_get_default(macAddr);
+    if(err == ESP_OK) { sprintf(macAddress, "%02X:%02X:%02X:%02X:%02X:%02x", macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]); }
+    return err;
+}
+
 static void wifiHandle(void* arg, esp_event_base_t eventBase, int32_t eventId, void* eventData)
 {
     if(eventBase == WIFI_EVENT && eventId == WIFI_EVENT_STA_START) { esp_wifi_connect(); }

@@ -4,6 +4,7 @@
 #include <esp_err.h>
 
 esp_err_t GetDeviceMAC(uint8_t* macAddress);
+esp_err_t GetDeviceMACAsString(char* macAddress);
 esp_err_t WiFiConnect(const char* ssid, const char* pwd);
 bool WifiConnected();
 bool WiFiSync(int timeoutMS);

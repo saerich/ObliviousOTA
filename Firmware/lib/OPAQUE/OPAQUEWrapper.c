@@ -3,13 +3,20 @@
 #include <stdbool.h>
 #include <esp_log.h>
 
-static const char* UserId = "1293";
 static const char* ServerId = "31415926535";
 static const char* Context = "SSOT/OPAQUE";
+Opaque_Ids ids;
 
-void init() { if(sodium_init() < 0) { ESP_ERROR_CHECK(ESP_ERR_HW_CRYPTO_BASE); } }
+void OPAQUEInit(const char* UserId)
+{
+    if(sodium_init() < 0) { ESP_ERROR_CHECK(ESP_ERR_HW_CRYPTO_BASE); } 
+    ids.idU_len = (uint16_t)strlen(UserId);
+    ids.idU = (uint8_t*)UserId;
+    ids.idS_len = (uint16_t)strlen(ServerId);
+    ids.idS = (uint8_t*)ServerId;
+}
 
-int ClientRegister(const char* password, uint8_t alpha[crypto_core_ristretto255_BYTES], uint8_t** outSec, uint16_t* outPwdLen)
+int OPAQUEClientRegister(const char* password, uint8_t alpha[crypto_core_ristretto255_BYTES], uint8_t** outSec, uint16_t* outPwdLen)
 {
     const uint16_t pwdLen = (uint16_t)strlen(password);
     const uint8_t *pwd = (const uint8_t*) password;
@@ -29,16 +36,8 @@ int ClientRegister(const char* password, uint8_t alpha[crypto_core_ristretto255_
     return 0;
 }
 
-int ClientFinalizeRegister(const uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN], uint8_t* sec, uint16_t pwdLen, uint8_t regRec[OPAQUE_REGISTRATION_RECORD_LEN], uint8_t exportKey[crypto_hash_sha512_BYTES])
+int OPAQUEClientFinalizeRegister(const uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN], uint8_t* sec, uint16_t pwdLen, uint8_t regRec[OPAQUE_REGISTRATION_RECORD_LEN], uint8_t exportKey[crypto_hash_sha512_BYTES])
 {
-    Opaque_Ids ids = 
-    {
-        .idU_len = (uint16_t)strlen(UserId),
-        .idU = (uint8_t*)UserId,
-        .idS_len = (uint16_t)strlen(ServerId),
-        .idS = (uint8_t*)ServerId
-    };
-
     if(opaque_FinalizeRequest(sec, rPub, &ids, regRec, exportKey) != 0) { return -1; }
 
     sodium_memzero(sec, OPAQUE_REGISTER_USER_SEC_LEN + pwdLen);
@@ -46,7 +45,7 @@ int ClientFinalizeRegister(const uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN], uint8
     return 0;
 }
 
-int ClientLogin(const char* password, ClientState_t* state, uint8_t ke1[OPAQUE_USER_SESSION_PUBLIC_LEN])
+int OPAQUEClientLogin(const char* password, ClientState_t* state, uint8_t ke1[OPAQUE_USER_SESSION_PUBLIC_LEN])
 {
     const uint16_t pwdLen = (uint16_t)strlen(password);
     const uint8_t *pwd = (const uint8_t*) password;
@@ -64,17 +63,9 @@ int ClientLogin(const char* password, ClientState_t* state, uint8_t ke1[OPAQUE_U
     return 0;
 }
 
-int ClientFinalizeLogin(ClientState_t* state, const uint8_t ke2[OPAQUE_SERVER_SESSION_LEN], uint8_t sk[OPAQUE_SHARED_SECRETBYTES], uint8_t authU[crypto_auth_hmacsha512_BYTES], uint8_t exportKey[crypto_hash_sha512_BYTES])
+int OPAQUEClientFinalizeLogin(ClientState_t* state, const uint8_t ke2[OPAQUE_SERVER_SESSION_LEN], uint8_t sk[OPAQUE_SHARED_SECRETBYTES], uint8_t authU[crypto_auth_hmacsha512_BYTES], uint8_t exportKey[crypto_hash_sha512_BYTES])
 {
     if(!state || !state->sec) { return -1; }
-
-    Opaque_Ids ids = 
-    {
-        .idU_len = (uint16_t)strlen(UserId),
-        .idU = (uint8_t*)UserId,
-        .idS_len = (uint16_t)strlen(ServerId),
-        .idS = (uint8_t*)ServerId
-    };
 
     const uint8_t* context = (const uint8_t*)Context;
     const uint16_t contextLen = (uint16_t)strlen(Context);
