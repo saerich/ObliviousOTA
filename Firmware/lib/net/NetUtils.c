@@ -31,6 +31,10 @@ esp_err_t GetDeviceMAC(uint8_t* macAddress)
     return esp_efuse_mac_get_default(macAddress);
 }
 
+/// @brief Gets the MAC address from the EFUSE of the ESP32, as a XX:XX:XX:XX:XX:XX formatted string
+/// @param macAddress char*[18] to hold the MAC address
+/// @exception If the macAddress parameter is not specified, execution will abort with ESP_ERR_INVALID_ARG
+/// @return Error from esp_efuse_mac_mac_get_default().
 esp_err_t GetDeviceMACAsString(char* macAddress)
 {
     uint8_t macAddr[6];
@@ -111,12 +115,13 @@ bool WiFiSync(int timeoutMS)
 {
     int waited = 0;
     const int step = 200;
+    
     while(!IsWiFiConnected && waited < timeoutMS)
     {
         vTaskDelay(pdMS_TO_TICKS(step));
         waited += step;
     }
     return IsWiFiConnected;
-}
+} 
 
 bool WifiConnected() { return IsWiFiConnected; }

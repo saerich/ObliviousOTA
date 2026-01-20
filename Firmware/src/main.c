@@ -2,6 +2,7 @@
 #include <esp_log.h>
 #include <esp_err.h>
 #include <NetUtils.h>
+#include <NetworkedOPAQUE.h>
 #ifndef WIFI_SSID
 #error "WIFI_SSID must be specified in .env"
 #endif
@@ -30,8 +31,8 @@ void app_main()
     char macAddr[18];
     GetDeviceMACAsString(macAddr);
     OPAQUEInit(macAddr);
+
+    WiFiSync(10000);
+    NetworkedOPAQUERegister(opaquePassword);
     
-
-
-    WiFiSync(10000);    
 }
