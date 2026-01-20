@@ -10,7 +10,9 @@ esp_err_t NetworkedOPAQUERegister(const char* password)
     uint16_t cPasswordLen;
     OPAQUEClientRegister(password, alpha, &cSec, &cPasswordLen);
 
-    //Send alpha tp Server, then Finalize Register
+    
+
+    //Send alpha to Server, then Finalize Register
     uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN];
     uint8_t regRec[OPAQUE_REGISTRATION_RECORD_LEN];
     uint8_t exportKeyReg[crypto_hash_sha512_BYTES];
