@@ -1,0 +1,3 @@
+D:/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/Interop.dir
+D:/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/edit_cache.dir
+D:/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/rebuild_cache.dir

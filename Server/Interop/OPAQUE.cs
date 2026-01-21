@@ -4,7 +4,7 @@ namespace ObliviousOTA.Interop;
 
 internal static partial class OPAQUE
 {
-    private const string Library = "OpaqueInterop";
+    private const string Library = "Interop";
     
     [LibraryImport(Library, EntryPoint = "HelloWorld")]
     internal static partial int HelloWorld(out IntPtr outStr, out int strLen);

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "Firmware"
+		},
+		{
+			"path": "Server"
+		},
+		{
+			"path": "Interop"
+		}
+	],
+	"settings": {}
+}

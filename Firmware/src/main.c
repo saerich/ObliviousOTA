@@ -33,6 +33,7 @@ void app_main()
     OPAQUEInit(macAddr);
 
     WiFiSync(10000);
+    
     NetworkedOPAQUERegister(opaquePassword);
     
 }
