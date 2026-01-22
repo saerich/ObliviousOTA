@@ -1,0 +1,7 @@
+idf_component_register(
+    SRCS
+        "oprf/oprf.c"
+        "oprf/toprf.c"
+    INCLUDE_DIRS "."
+    REQUIRES libsodium noise_xk karmel
+)

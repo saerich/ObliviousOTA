@@ -1,0 +1,12 @@
+# file(GLOB SOURCES "*.c")
+# file(GLOB TESTS "tests/*.c")
+# list(REMOVE_ITEM SOURCES ${TESTS})
+
+idf_component_register(
+    SRCS 
+        "opaque.c"
+        "common.c"
+        "aux_/kdf_hkdf_sha512.c"
+    INCLUDE_DIRS "."
+    REQUIRES libsodium liboprf
+)
