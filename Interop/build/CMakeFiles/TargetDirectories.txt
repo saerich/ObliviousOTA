@@ -1,0 +1,4 @@
+/mnt/d/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/libopaque.dir
+/mnt/d/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/Interop.dir
+/mnt/d/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/edit_cache.dir
+/mnt/d/Projects/PHD/ObliviousOTA/Interop/build/CMakeFiles/rebuild_cache.dir

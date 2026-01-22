@@ -7,9 +7,9 @@ file(GLOB_RECURSE LIBOPAQUE_SOURCES
 add_library(libopaque STATIC ${LIBOPAQUE_SOURCES})
 
 target_include_directories(libopaque PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/noise_xk
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/karmel
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/libopaque
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/noise_xk
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/liboprf
 )
 
