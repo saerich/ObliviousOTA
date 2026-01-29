@@ -53,7 +53,7 @@ build CMakeFiles/libopaque.dir/lib/libopaque/aux_/kdf_hkdf_sha512.c.o: C_COMPILE
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/aux_/kdf_hkdf_sha512.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/aux_
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -62,7 +62,7 @@ build CMakeFiles/libopaque.dir/lib/libopaque/common.c.o: C_COMPILER__libopaque_u
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/common.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -71,61 +71,16 @@ build CMakeFiles/libopaque.dir/lib/libopaque/opaque.c.o: C_COMPILER__libopaque_u
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/opaque.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/example.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/tests/munit/example.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/example.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/tests/munit
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/munit.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/tests/munit/munit.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/munit.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/tests/munit
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-munit.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/tests/opaque-munit.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-munit.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-test.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/tests/opaque-test.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-test.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-testvectors.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/tests/opaque-testvectors.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-testvectors.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/tests
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
 
 build CMakeFiles/libopaque.dir/lib/libopaque/utils/main.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque/utils/main.c || cmake_object_order_depends_target_libopaque
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/libopaque/utils/main.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/libopaque/utils
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -134,7 +89,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/aux_/kdf_hkdf_sha256.c.o: C_COMP
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/aux_/kdf_hkdf_sha256.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/aux_
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -143,7 +98,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg-vss.c.o: C_COMPILER__libopaq
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg-vss.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -152,16 +107,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg.c.o: C_COMPILER__libopaque_u
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/jni.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/jni.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/jni.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -170,7 +116,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/mpmult.c.o: C_COMPILER__libopaqu
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/mpmult.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -179,7 +125,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/oprf.c.o: C_COMPILER__libopaque_
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/oprf.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -188,124 +134,16 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/stp-dkg.c.o: C_COMPILER__libopaq
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/stp-dkg.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/allocations.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/allocations.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/allocations.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/dkg.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/dkg.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/dkg.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/ft-mult.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/ft-mult.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/ft-mult.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/msg0.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/fuzz-tp-dkg/msg0.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/msg0.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/peer-start.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/fuzz-tp-dkg/peer-start.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/peer-start.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/mpmult.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/mpmult.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/mpmult.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/stp-dkg.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/stp-dkg.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/stp-dkg.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/test.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/test.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/test.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf-update.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/toprf-update.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf-update.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/toprf.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/tp-dkg.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/tp-dkg.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/tp-dkg.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
-  TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
-
-build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/update-poc.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/tests/update-poc.c || cmake_object_order_depends_target_libopaque
-  CONFIG = Release
-  DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/update-poc.c.o.d
-  FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
-  OBJECT_DIR = CMakeFiles/libopaque.dir
-  OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
 
 build CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf-update.c.o: C_COMPILER__libopaque_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf/toprf-update.c || cmake_object_order_depends_target_libopaque
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf-update.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -314,7 +152,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf.c.o: C_COMPILER__libopaque
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -323,7 +161,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/tp-dkg.c.o: C_COMPILER__libopaqu
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/tp-dkg.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -332,7 +170,7 @@ build CMakeFiles/libopaque.dir/lib/liboprf/oprf/utils.c.o: C_COMPILER__libopaque
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/liboprf/oprf/utils.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/liboprf/oprf
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -341,7 +179,7 @@ build CMakeFiles/libopaque.dir/lib/noise_xk/src/Noise_XK.c.o: C_COMPILER__libopa
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/noise_xk/src/Noise_XK.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/noise_xk/src
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -350,7 +188,7 @@ build CMakeFiles/libopaque.dir/lib/noise_xk/src/XK.c.o: C_COMPILER__libopaque_un
   CONFIG = Release
   DEP_FILE = CMakeFiles/libopaque.dir/lib/noise_xk/src/XK.c.o.d
   FLAGS = -O3 -DNDEBUG
-  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/libopaque.dir
   OBJECT_FILE_DIR = CMakeFiles/libopaque.dir/lib/noise_xk/src
   TARGET_SUPPORT_DIR = CMakeFiles/libopaque.dir
@@ -363,7 +201,7 @@ build CMakeFiles/libopaque.dir/lib/noise_xk/src/XK.c.o: C_COMPILER__libopaque_un
 #############################################
 # Link the static library liblibopaque.a
 
-build liblibopaque.a: C_STATIC_LIBRARY_LINKER__libopaque_Release CMakeFiles/libopaque.dir/lib/libopaque/aux_/kdf_hkdf_sha512.c.o CMakeFiles/libopaque.dir/lib/libopaque/common.c.o CMakeFiles/libopaque.dir/lib/libopaque/opaque.c.o CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/example.c.o CMakeFiles/libopaque.dir/lib/libopaque/tests/munit/munit.c.o CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-munit.c.o CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-test.c.o CMakeFiles/libopaque.dir/lib/libopaque/tests/opaque-testvectors.c.o CMakeFiles/libopaque.dir/lib/libopaque/utils/main.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/aux_/kdf_hkdf_sha256.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg-vss.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/jni.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/mpmult.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/oprf.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/stp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/allocations.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/ft-mult.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/msg0.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/fuzz-tp-dkg/peer-start.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/mpmult.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/stp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/test.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf-update.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/toprf.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/tp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tests/update-poc.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf-update.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/utils.c.o CMakeFiles/libopaque.dir/lib/noise_xk/src/Noise_XK.c.o CMakeFiles/libopaque.dir/lib/noise_xk/src/XK.c.o
+build liblibopaque.a: C_STATIC_LIBRARY_LINKER__libopaque_Release CMakeFiles/libopaque.dir/lib/libopaque/aux_/kdf_hkdf_sha512.c.o CMakeFiles/libopaque.dir/lib/libopaque/common.c.o CMakeFiles/libopaque.dir/lib/libopaque/opaque.c.o CMakeFiles/libopaque.dir/lib/libopaque/utils/main.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/aux_/kdf_hkdf_sha256.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg-vss.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/mpmult.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/oprf.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/stp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf-update.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/toprf.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/tp-dkg.c.o CMakeFiles/libopaque.dir/lib/liboprf/oprf/utils.c.o CMakeFiles/libopaque.dir/lib/noise_xk/src/Noise_XK.c.o CMakeFiles/libopaque.dir/lib/noise_xk/src/XK.c.o
   CONFIG = Release
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = CMakeFiles/libopaque.dir
@@ -380,13 +218,14 @@ build liblibopaque.a: C_STATIC_LIBRARY_LINKER__libopaque_Release CMakeFiles/libo
 #############################################
 # Order-only phony target for Interop
 
-build cmake_object_order_depends_target_Interop: phony || .
+build cmake_object_order_depends_target_Interop: phony || cmake_object_order_depends_target_libopaque
 
 build CMakeFiles/Interop.dir/Interop.c.o: C_COMPILER__Interop_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/Interop.c || cmake_object_order_depends_target_Interop
   CONFIG = Release
   DEFINES = -DInterop_EXPORTS
   DEP_FILE = CMakeFiles/Interop.dir/Interop.c.o.d
   FLAGS = -O3 -DNDEBUG -fPIC
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/Interop.dir
   OBJECT_FILE_DIR = CMakeFiles/Interop.dir
   TARGET_SUPPORT_DIR = CMakeFiles/Interop.dir
@@ -396,6 +235,7 @@ build CMakeFiles/Interop.dir/OpaqueInterop.c.o: C_COMPILER__Interop_unscanned_Re
   DEFINES = -DInterop_EXPORTS
   DEP_FILE = CMakeFiles/Interop.dir/OpaqueInterop.c.o.d
   FLAGS = -O3 -DNDEBUG -fPIC
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
   OBJECT_DIR = CMakeFiles/Interop.dir
   OBJECT_FILE_DIR = CMakeFiles/Interop.dir
   TARGET_SUPPORT_DIR = CMakeFiles/Interop.dir
@@ -406,18 +246,19 @@ build CMakeFiles/Interop.dir/OpaqueInterop.c.o: C_COMPILER__Interop_unscanned_Re
 
 
 #############################################
-# Link the shared library libInterop.so
+# Link the shared library /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
 
-build libInterop.so: C_SHARED_LIBRARY_LINKER__Interop_Release CMakeFiles/Interop.dir/Interop.c.o CMakeFiles/Interop.dir/OpaqueInterop.c.o
+build /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so: C_SHARED_LIBRARY_LINKER__Interop_Release CMakeFiles/Interop.dir/Interop.c.o CMakeFiles/Interop.dir/OpaqueInterop.c.o | liblibopaque.a /usr/lib/x86_64-linux-gnu/libsodium.so || liblibopaque.a
   CONFIG = Release
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -shared
+  LINK_LIBRARIES = liblibopaque.a  /usr/lib/x86_64-linux-gnu/libsodium.so
   OBJECT_DIR = CMakeFiles/Interop.dir
   POST_BUILD = :
   PRE_LINK = :
   SONAME = libInterop.so
   SONAME_FLAG = -Wl,-soname,
-  TARGET_FILE = libInterop.so
+  TARGET_FILE = /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
   TARGET_PDB = Interop.so.dbg
   TARGET_SUPPORT_DIR = CMakeFiles/Interop.dir
 
@@ -447,7 +288,9 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
-build Interop: phony libInterop.so
+build Interop: phony /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
+
+build libInterop.so: phony /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
 
 build libopaque: phony liblibopaque.a
 
@@ -466,7 +309,7 @@ build codegen: phony
 #############################################
 # Folder: /mnt/d/Projects/PHD/ObliviousOTA/Interop/build
 
-build all: phony liblibopaque.a libInterop.so
+build all: phony liblibopaque.a /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
 
 # =============================================================================
 # Built-in targets

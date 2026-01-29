@@ -15,9 +15,14 @@
 #error "OPAQUE_PASSWORD must be specified in .env"
 #endif
 
+#ifndef OPAQUE_SERVER_URL
+#error "OPAQUE_SERVER_URL must be specified in .env"
+#endif
+
 const char* wifiSSID = WIFI_SSID;
 const char* wifiPassword = WIFI_PASSWORD;
 const char* opaquePassword = OPAQUE_PASSWORD;
+const char* opaqueServerURL = OPAQUE_SERVER_URL;
 const char* TAG = "[Main]";
 /**
  * @brief Primary entry point for the ESPIDF application, the intent of this application is to provide a one-shot example of
@@ -34,6 +39,6 @@ void app_main()
 
     WiFiSync(10000);
     
-    NetworkedOPAQUERegister(opaquePassword);
+    NetworkedOPAQUERegister(opaqueServerURL, macAddr, opaquePassword);
     
 }
