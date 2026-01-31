@@ -11,13 +11,16 @@ builder.WebHost.ConfigureKestrel(x =>
 
 var app = builder.Build();
 
-app.Lifetime.ApplicationStopping.Register(() =>
+var cleanup = () =>
 {
-    File.Delete("*.osk"); //Ensure all users are logged out when server stopped.
-    File.Delete("*.olau0"); //Terminate all pending login attempts.
-    File.Delete("*.olsk"); //Terminate all potential shared keys.
-    File.Delete("*.opqs"); //Terminate all registration in progress attempts.
-});
+    _ = Directory.GetFiles(".", "*.osk").Select(x => { File.Delete(x); return 0; }).ToArray(); //Ensure all users are logged out when server stopped.
+    _ = Directory.GetFiles(".", "*.olau0").Select(x => { File.Delete(x); return 0; }).ToArray(); //Terminate all pending login attempts.
+    _ = Directory.GetFiles(".", "*.olsk").Select(x => { File.Delete(x); return 0; }).ToArray(); //Terminate all potential shared keys.
+    _ = Directory.GetFiles(".", "*.opqs").Select(x => { File.Delete(x); return 0; }).ToArray(); //Terminate all registration in progress attempts.
+};
+
+cleanup();
+app.Lifetime.ApplicationStopping.Register(cleanup);
 
 byte[] seed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
@@ -32,11 +35,9 @@ else
     seed = File.ReadAllBytes("opaqueseed");
 }
 
-
 app.MapGet("/Register", ([AsParameters] RegisterRequest req) =>
 {
     if(File.Exists($"{req.Username}.opqr")) { return Results.Conflict("Device registration not possible."); }
-    Console.WriteLine(req.Alpha);
     byte[] rawAlpha = Convert.FromHexString(req.Alpha);
     byte[]? rPub = InteropWrappers.OpaqueRegister(req.Username, rawAlpha, seed);
     Console.WriteLine(Convert.ToHexString(rPub ?? []));
@@ -46,7 +47,6 @@ app.MapGet("/Register", ([AsParameters] RegisterRequest req) =>
 
 app.MapGet("/RegisterFinalize", ([AsParameters] RegisterFinalizeRequest req) =>
 {
-    Console.WriteLine(req.RegisterRecord);
     byte[] rawRegRec = Convert.FromHexString(req.RegisterRecord);
     byte[]? rec = InteropWrappers.OpaqueRegisterFinalize(req.Username, rawRegRec);
     Console.WriteLine(Convert.ToHexString(rec ?? []));
@@ -57,7 +57,6 @@ app.MapGet("/RegisterFinalize", ([AsParameters] RegisterFinalizeRequest req) =>
 
 app.MapGet("/Login", ([AsParameters] LoginRequest req) =>
 {
-    Console.WriteLine(req.Ke1);
     byte[] rawKe1 = Convert.FromHexString(req.Ke1);
     byte[]? res = InteropWrappers.OpaqueLogin(rawKe1, req.Username);
     if(res == null) { return Results.BadRequest("Could not attempt to log in."); }
@@ -66,7 +65,6 @@ app.MapGet("/Login", ([AsParameters] LoginRequest req) =>
 
 app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
 {
-    Console.WriteLine(req.AuthU);
     byte[] rawAuthU = Convert.FromHexString(req.AuthU);
     if(!InteropWrappers.OpaqueLoginVerify(rawAuthU, req.Username)) { return Results.BadRequest("Could not log user in."); }
     return Results.Ok();     

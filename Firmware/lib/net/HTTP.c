@@ -103,6 +103,65 @@ cJSON* HTTPGetJSON(const char* url, int* statusCode)
     return root; 
 }
 
+void HTTPGet(const char* url, int* statusCode)
+{
+    char* buf = NULL;
+
+    buf = malloc(HTTP_BUFFER_MAX);
+    if(!buf) 
+    {
+        ESP_LOGE(TAG, "Could not allocate response buffer for HTTP request.");
+        return;
+    }
+    
+    HTTPBufferContext_t ctx =
+    {
+        .buf = buf,
+        .bufLen = 0,
+        .bufSize = HTTP_BUFFER_MAX
+    };
+
+    esp_http_client_config_t config =
+    {
+        .url = url,
+        .method = HTTP_METHOD_GET,
+        .event_handler = onHttpReceive,
+        .user_data = &ctx,
+        .crt_bundle_attach = esp_crt_bundle_attach
+    };
+
+    esp_http_client_handle_t cli = esp_http_client_init(&config);
+    if(!cli)
+    {
+        ESP_LOGE(TAG, "Failed to create HTTP Client.");
+        free(buf);
+        return;
+    }
+
+    esp_err_t err = esp_http_client_perform(cli);
+    if(err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "HTTP GET failed: %s", esp_err_to_name(err));
+        esp_http_client_cleanup(cli);
+        free(buf);
+        return;
+    }
+
+    int stat = esp_http_client_get_status_code(cli);
+    if(statusCode) { *statusCode = stat; }
+
+    if(stat < 200 || stat >= 300)
+    {
+        ESP_LOGE(TAG, "Non-Successful status code from HTTP Request.");
+        esp_http_client_cleanup(cli);
+        free(buf);
+        return;
+    }
+
+    esp_http_client_cleanup(cli);
+    free(buf);
+}
+
 void URLEncodeByteArray(const uint8_t* data, size_t len, char* out, size_t outSize)
 {
     static const char hex[] = "0123456789ABCDEF";

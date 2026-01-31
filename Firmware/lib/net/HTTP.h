@@ -11,5 +11,6 @@ typedef struct
 } HTTPBufferContext_t;
 
 cJSON* HTTPGetJSON(const char* url, int* statusCode);
+void HTTPGet(const char* url, int* statusCode);
 void URLEncodeByteArray(const uint8_t* data, size_t len, char* out, size_t outSize);
 #endif

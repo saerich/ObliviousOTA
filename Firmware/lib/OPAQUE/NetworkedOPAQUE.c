@@ -22,6 +22,9 @@ esp_err_t NetworkedOPAQUERegister(const char* opaqueServerUrl, const char* usern
     int statusCode = 0;
     cJSON* registerResponse = HTTPGetJSON(url, &statusCode);
     memset(url, 0x00, sizeof(url));
+
+    if(statusCode != 200) { return ESP_ERR_NOT_SUPPORTED; } //Already registered.
+
     const char* rPubStr = cJSON_GetStringValue(registerResponse);
 
     //Send alpha to Server, then Finalize Register
@@ -38,7 +41,7 @@ esp_err_t NetworkedOPAQUERegister(const char* opaqueServerUrl, const char* usern
     URLEncodeByteArray(regRec, sizeof(regRec), encodedRegRec, sizeof(encodedRegRec));
     
     snprintf(url, sizeof(url), "%s/RegisterFinalize?RegisterRecord=%s&Username=%s", opaqueServerUrl, encodedRegRec, username);
-    HTTPGetJSON(url, &statusCode);
+    HTTPGet(url, &statusCode);
     memset(url, 0x00, sizeof(url));
 
     //if statuscode 200, probably save something to NVS to just say "I've registered!";
@@ -73,7 +76,7 @@ esp_err_t NetworkedOPAQUELogin(const char* opaqueServerUrl, const char* username
     char encodedAuthU[sizeof(authU)*2+1];
     URLEncodeByteArray(authU, sizeof(authU), encodedAuthU, sizeof(encodedAuthU));
     snprintf(url, sizeof(url), "%s/LoginVerify?AuthU=%s&Username=%s", opaqueServerUrl, encodedAuthU, username);
-    HTTPGetJSON(url, &statusCode);
+    HTTPGet(url, &statusCode);
 
-    return (statusCode == 200) ? ESP_OK : ESP_ERR_INVALID_RESPONSE;
+    return (statusCode >= 200 && statusCode <= 300) ? ESP_OK : ESP_ERR_INVALID_RESPONSE;
 }

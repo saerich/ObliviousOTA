@@ -39,12 +39,14 @@ void app_main()
 
     WiFiSync(10000);
     
-    NetworkedOPAQUERegister(opaqueServerURL, macAddr, opaquePassword);
+    esp_err_t err = NetworkedOPAQUERegister(opaqueServerURL, macAddr, opaquePassword);
+    if(err == ESP_ERR_NOT_SUPPORTED) { ESP_LOGI("[Main]", "User is already registered."); }
 
     uint8_t skClient[OPAQUE_SHARED_SECRETBYTES];
     uint8_t exportKey[crypto_hash_sha512_BYTES];
 
-    NetworkedOPAQUELogin(opaqueServerURL, macAddr, opaquePassword, skClient, exportKey);
+    ESP_ERROR_CHECK(NetworkedOPAQUELogin(opaqueServerURL, macAddr, opaquePassword, skClient, exportKey));
+    
     
 
 }
