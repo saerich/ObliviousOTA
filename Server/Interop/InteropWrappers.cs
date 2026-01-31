@@ -37,5 +37,35 @@ internal class InteropWrappers
         File.WriteAllBytes($"{username}.opqr", rec);
         File.Delete($"{username}.opqs"); //Delete registration secret.
         return rec;
+
+    }
+
+    internal static byte[]? OpaqueLogin(byte[] ke1, string username)
+    {
+        if(!File.Exists($"{username}.opqr")) { return null; } //Not registered.
+        if(File.Exists($"{username}.olau0")) { File.Delete($"{username}.olau0"); } //Trying second login attempt, terminate first.
+        byte[] rec = File.ReadAllBytes($"{username}.opqr");
+        byte[] authU0 = new byte[Interop.crypto_auth_hmacsha512_BYTES];
+        byte[] sk = new byte[Interop.OPAQUE_SHARED_SECRETBYTES];
+        byte[] ke2 = new byte[Interop.OPAQUE_SERVER_SESSION_LEN];
+
+        Interop.OpaqueLogin(ke1, rec, System.Text.Encoding.UTF8.GetBytes(username), authU0, sk, ke2);
+
+        File.WriteAllBytes($"{username}.olau0", authU0);
+        File.WriteAllBytes($"{username}.olsk", sk);
+
+        return ke2;
+    }
+
+    internal static bool OpaqueLoginVerify(byte[] authU, string username)
+    {
+        if(!File.Exists($"{username}.olau0") || !File.Exists($"{username}.olsk")) { return false; }
+        byte[] authU0 = File.ReadAllBytes($"{username}.olau0");
+        File.Delete($"{username}.olau0");
+        bool valid = Interop.OpaqueLoginVerify(authU0, authU) == 0;
+
+        if(!valid) { File.Delete($"{username}.olsk"); } //Invalid login, delete calculated shared key.
+        else { File.Move($"{username}.olsk", $"{username}.osk"); }
+        return valid;
     }
 }

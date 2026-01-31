@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <esp_log.h>
 
-static const char* ServerId = "31415926535";
-static const char* Context = "SSOT/OPAQUE";
+static const char* ServerId = "314159265359";
+static const char* Context = "BlindFetch/OPAQUE";
 Opaque_Ids ids;
 
 void OPAQUEInit(const char* UserId)

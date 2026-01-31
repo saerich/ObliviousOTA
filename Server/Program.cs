@@ -11,6 +11,14 @@ builder.WebHost.ConfigureKestrel(x =>
 
 var app = builder.Build();
 
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    File.Delete("*.osk"); //Ensure all users are logged out when server stopped.
+    File.Delete("*.olau0"); //Terminate all pending login attempts.
+    File.Delete("*.olsk"); //Terminate all potential shared keys.
+    File.Delete("*.opqs"); //Terminate all registration in progress attempts.
+});
+
 byte[] seed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
 if(!File.Exists("opaqueseed"))
@@ -27,6 +35,7 @@ else
 
 app.MapGet("/Register", ([AsParameters] RegisterRequest req) =>
 {
+    if(File.Exists($"{req.Username}.opqr")) { return Results.Conflict("Device registration not possible."); }
     Console.WriteLine(req.Alpha);
     byte[] rawAlpha = Convert.FromHexString(req.Alpha);
     byte[]? rPub = InteropWrappers.OpaqueRegister(req.Username, rawAlpha, seed);
@@ -46,14 +55,21 @@ app.MapGet("/RegisterFinalize", ([AsParameters] RegisterFinalizeRequest req) =>
     
 });
 
-app.MapGet("/Login", () =>
+app.MapGet("/Login", ([AsParameters] LoginRequest req) =>
 {
-
+    Console.WriteLine(req.Ke1);
+    byte[] rawKe1 = Convert.FromHexString(req.Ke1);
+    byte[]? res = InteropWrappers.OpaqueLogin(rawKe1, req.Username);
+    if(res == null) { return Results.BadRequest("Could not attempt to log in."); }
+    return Results.Ok(Convert.ToHexString(res));
 });
 
-app.MapGet("/LoginFinalize", () =>
+app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
 {
-
+    Console.WriteLine(req.AuthU);
+    byte[] rawAuthU = Convert.FromHexString(req.AuthU);
+    if(!InteropWrappers.OpaqueLoginVerify(rawAuthU, req.Username)) { return Results.BadRequest("Could not log user in."); }
+    return Results.Ok();     
 });
 
 app.Run();

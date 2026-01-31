@@ -26,3 +26,13 @@ int OpaqueRegisterFinalize(const uint8_t rSec[OPAQUE_REGISTER_SECRET_LEN], const
 {
     return OPAQUEServerFinalizeRegistrationRequest(rSec, registerRec, rec);
 }
+
+int OpaqueLogin(const uint8_t ke1[OPAQUE_USER_SESSION_PUBLIC_LEN], const uint8_t rec[OPAQUE_USER_RECORD_LEN], const char* Username, uint8_t authU0[crypto_auth_hmacsha512_BYTES], uint8_t sk[OPAQUE_SHARED_SECRETBYTES], uint8_t ke2[OPAQUE_SERVER_SESSION_LEN])
+{
+    return OPAQUEServerAcceptLoginRequest(ke1, rec, Username, authU0, sk, ke2);
+}
+
+int OpaqueLoginVerify(const uint8_t authU0[crypto_auth_hmacsha512_BYTES], const uint8_t authU[crypto_auth_hmacsha512_BYTES])
+{
+    return OPAQUEServerLoginVerify(authU0, authU);
+}

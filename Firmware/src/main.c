@@ -40,5 +40,11 @@ void app_main()
     WiFiSync(10000);
     
     NetworkedOPAQUERegister(opaqueServerURL, macAddr, opaquePassword);
+
+    uint8_t skClient[OPAQUE_SHARED_SECRETBYTES];
+    uint8_t exportKey[crypto_hash_sha512_BYTES];
+
+    NetworkedOPAQUELogin(opaqueServerURL, macAddr, opaquePassword, skClient, exportKey);
     
+
 }
