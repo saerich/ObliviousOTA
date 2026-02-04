@@ -40,6 +40,8 @@ add_library(Interop SHARED
     "Interop.h"
     "OpaqueInterop.c"
     "OpaqueInterop.h"
+    "OPRFInterop.c"
+    "OPRFInterop.h"
 )
 
 target_link_libraries(Interop PRIVATE libopaque)

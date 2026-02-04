@@ -3,6 +3,7 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <esp_crt_bundle.h>
+#include <sodium.h>
 
 static const char* TAG = "HTTP";
 static const int HTTP_BUFFER_MAX = 4096;
@@ -174,4 +175,10 @@ void URLEncodeByteArray(const uint8_t* data, size_t len, char* out, size_t outSi
         out[i*2+1] = hex[data[i] & 0x0F];
     }
     out[len * 2] = '\0';
+}
+
+void URLDecodeHexString(const char* hexString, uint8_t* output) 
+{
+    size_t loops = strlen(hexString)/2;
+    for(size_t i = 0; i < loops; i++) { sscanf(hexString + (i*2), "%2hhx", &output[i]); }
 }

@@ -240,6 +240,16 @@ build CMakeFiles/Interop.dir/OpaqueInterop.c.o: C_COMPILER__Interop_unscanned_Re
   OBJECT_FILE_DIR = CMakeFiles/Interop.dir
   TARGET_SUPPORT_DIR = CMakeFiles/Interop.dir
 
+build CMakeFiles/Interop.dir/OPRFInterop.c.o: C_COMPILER__Interop_unscanned_Release /mnt/d/Projects/PHD/ObliviousOTA/Interop/OPRFInterop.c || cmake_object_order_depends_target_Interop
+  CONFIG = Release
+  DEFINES = -DInterop_EXPORTS
+  DEP_FILE = CMakeFiles/Interop.dir/OPRFInterop.c.o.d
+  FLAGS = -O3 -DNDEBUG -fPIC
+  INCLUDES = -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/noise_xk/include -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/karmel/minimal -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/liboprf/oprf -I/mnt/d/Projects/PHD/ObliviousOTA/Interop/lib/libopaque
+  OBJECT_DIR = CMakeFiles/Interop.dir
+  OBJECT_FILE_DIR = CMakeFiles/Interop.dir
+  TARGET_SUPPORT_DIR = CMakeFiles/Interop.dir
+
 
 # =============================================================================
 # Link build statements for SHARED_LIBRARY target Interop
@@ -248,7 +258,7 @@ build CMakeFiles/Interop.dir/OpaqueInterop.c.o: C_COMPILER__Interop_unscanned_Re
 #############################################
 # Link the shared library /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so
 
-build /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so: C_SHARED_LIBRARY_LINKER__Interop_Release CMakeFiles/Interop.dir/Interop.c.o CMakeFiles/Interop.dir/OpaqueInterop.c.o | liblibopaque.a /usr/lib/x86_64-linux-gnu/libsodium.so || liblibopaque.a
+build /mnt/d/Projects/PHD/ObliviousOTA/Server/libInterop.so: C_SHARED_LIBRARY_LINKER__Interop_Release CMakeFiles/Interop.dir/Interop.c.o CMakeFiles/Interop.dir/OpaqueInterop.c.o CMakeFiles/Interop.dir/OPRFInterop.c.o | liblibopaque.a /usr/lib/x86_64-linux-gnu/libsodium.so || liblibopaque.a
   CONFIG = Release
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -shared

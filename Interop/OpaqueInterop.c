@@ -9,6 +9,7 @@ int InitServer(uint8_t serverSecret[crypto_scalarmult_SCALARBYTES])
 {
     if(sodium_init() < 0) { return -1; }
     randombytes_buf(serverSecret, crypto_scalarmult_SCALARBYTES);
+    crypto_core_ristretto255_scalar_reduce(serverSecret, serverSecret);
     return 0;
 }
 

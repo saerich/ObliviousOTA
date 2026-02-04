@@ -3,6 +3,8 @@
 #include <esp_err.h>
 #include <NetUtils.h>
 #include <NetworkedOPAQUE.h>
+#include <BlindFetch.h>
+
 #ifndef WIFI_SSID
 #error "WIFI_SSID must be specified in .env"
 #endif
@@ -23,7 +25,10 @@ const char* wifiSSID = WIFI_SSID;
 const char* wifiPassword = WIFI_PASSWORD;
 const char* opaquePassword = OPAQUE_PASSWORD;
 const char* opaqueServerURL = OPAQUE_SERVER_URL;
+const char* deviceFirmwareKey = FIRMWARE_KEY; // Under normal circumstances, this would be an EFUSE burned value from a fabricator. 
 const char* TAG = "[Main]";
+
+
 /**
  * @brief Primary entry point for the ESPIDF application, the intent of this application is to provide a one-shot example of
  * an implementation of a fully oblivious over the air updating mechanism, running on clock speed 160MHz
@@ -44,9 +49,8 @@ void app_main()
 
     uint8_t skClient[OPAQUE_SHARED_SECRETBYTES];
     uint8_t exportKey[crypto_hash_sha512_BYTES];
-
+    
     ESP_ERROR_CHECK(NetworkedOPAQUELogin(opaqueServerURL, macAddr, opaquePassword, skClient, exportKey));
-    
-    
 
+    BlindDownloadFirmware(opaqueServerURL, deviceFirmwareKey, macAddr, skClient);
 }

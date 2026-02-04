@@ -53,7 +53,6 @@ internal class InteropWrappers
 
         File.WriteAllBytes($"{username}.olau0", authU0);
         File.WriteAllBytes($"{username}.olsk", sk);
-
         return ke2;
     }
 
@@ -64,8 +63,45 @@ internal class InteropWrappers
         File.Delete($"{username}.olau0");
         bool valid = Interop.OpaqueLoginVerify(authU0, authU) == 0;
 
-        if(!valid) { File.Delete($"{username}.olsk"); } //Invalid login, delete calculated shared key.
-        else { File.Move($"{username}.olsk", $"{username}.osk"); }
+        File.Delete($"{username}.osk"); //invalid login or successful, cleanup.
+        if(valid) { File.Move($"{username}.olsk", $"{username}.osk"); }
         return valid;
+    }
+
+    internal static byte[]? SelectOPRFEvaluate(byte[] alpha)
+    {
+        byte[] sk = File.ReadAllBytes($"opaqueseed");
+        byte[] beta = new byte[32];
+        if(Interop.SelectOPRFEvaluate(alpha, sk, beta) != 0) { return null;} 
+        return beta;
+    }
+
+    internal static byte[]? CreateKeyFromSKUKey(byte[] deviceKey, string username)
+    {
+        if(!File.Exists($"{username}.osk")) { return null; }
+        byte[] sk = File.ReadAllBytes($"{username}.osk");
+        byte[] fwHash = new byte[64];
+        Interop.CreateKeyFromSKUKey(sk, deviceKey, fwHash);
+        return fwHash;
+    }
+
+    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmwareSize(string username, byte[] seed, byte[] slotHash, byte[] len)
+    {
+        if(!File.Exists($"{username}.osk")) { return null; }
+        byte[] sk = File.ReadAllBytes($"{username}.osk");
+        byte[] cipherText = new byte[8+16];
+        byte[] nonce = new byte[12];
+        Interop.EncryptFirmwareSize(sk, seed, slotHash, len, nonce, cipherText);
+        return (cipherText, nonce);
+    }
+
+    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmware(string username, byte[] seed, byte[] deviceKey, byte[] firmwareBlock)
+    {
+        if(!File.Exists($"{username}.osk")) { return null; }
+        byte[] sk = File.ReadAllBytes($"{username}.osk");
+        byte[] cipherText = new byte[1040];
+        byte[] nonce = new byte[12];
+        Interop.EncryptFirmware(sk, seed, deviceKey, firmwareBlock, nonce, cipherText);
+        return (cipherText, nonce);
     }
 }

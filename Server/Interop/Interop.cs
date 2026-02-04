@@ -29,4 +29,16 @@ internal static partial class Interop
     
     [LibraryImport(Library, EntryPoint = "OpaqueLoginVerify")]
     internal static partial int OpaqueLoginVerify([In] byte[] authU0, [In] byte[] authU);
+
+    [LibraryImport(Library, EntryPoint = "SelectOPRFEvaluate")]
+    internal static partial int SelectOPRFEvaluate([In] byte[] alpha, [In] byte[] skServer, [Out] byte[] beta);
+
+    [LibraryImport(Library, EntryPoint = "CreateKeyFromSKUKey")]
+    internal static partial int CreateKeyFromSKUKey([In] byte[] skClient, [In] byte[] deviceKey, [Out] byte[] fwHash);
+
+    [LibraryImport(Library, EntryPoint = "EncryptFirmware")]
+    internal static partial int EncryptFirmware([In] byte[] skClient, [In] byte[] seed, [In] byte[] deviceKey, [In] byte[] firmwareFile, [Out] byte[] nonce, [Out] byte[] cipherText);
+    [LibraryImport(Library, EntryPoint = "EncryptFirmware")]
+    internal static partial int EncryptFirmwareSize([In] byte[] skClient, [In] byte[] seed, [In] byte[] slotHash, [In] byte[] slotLength, [Out] byte[] nonce, [Out] byte[] cipherText);
+
 }

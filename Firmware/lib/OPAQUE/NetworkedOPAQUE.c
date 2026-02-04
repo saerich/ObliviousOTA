@@ -29,7 +29,7 @@ esp_err_t NetworkedOPAQUERegister(const char* opaqueServerUrl, const char* usern
 
     //Send alpha to Server, then Finalize Register
     uint8_t rPub[OPAQUE_REGISTER_PUBLIC_LEN];
-    for(size_t i = 0; i < strlen(rPubStr)/2; i++) { sscanf(rPubStr + (i*2), "%2hhx", &rPub[i]); }
+    URLDecodeHexString(rPubStr, rPub);
     cJSON_Delete(registerResponse);
 
     uint8_t regRec[OPAQUE_REGISTRATION_RECORD_LEN];
@@ -65,7 +65,8 @@ esp_err_t NetworkedOPAQUELogin(const char* opaqueServerUrl, const char* username
     cJSON* loginRes = HTTPGetJSON(url, &statusCode);
     const char* ke2Str = cJSON_GetStringValue(loginRes);
     uint8_t ke2[OPAQUE_SERVER_SESSION_LEN];
-    for(size_t i = 0; i < strlen(ke2Str)/2; i++) { sscanf(ke2Str + (i*2), "%2hhx", &ke2[i]); }
+    URLDecodeHexString(ke2Str, ke2);
+
     cJSON_Delete(loginRes);
     memset(url, 0x00, sizeof(url));
 

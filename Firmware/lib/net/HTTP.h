@@ -13,4 +13,5 @@ typedef struct
 cJSON* HTTPGetJSON(const char* url, int* statusCode);
 void HTTPGet(const char* url, int* statusCode);
 void URLEncodeByteArray(const uint8_t* data, size_t len, char* out, size_t outSize);
+void URLDecodeHexString(const char* hexString, uint8_t* output);
 #endif
