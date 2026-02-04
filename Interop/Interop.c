@@ -87,7 +87,7 @@ int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const
     if(crypto_scalarmult_ristretto255(N, seed, P) != 0) { return -1; }
     
     uint8_t rwdU[64];
-    oprf_Finalize(slotHash, crypto_scalarmult_SCALARBYTES, N, rwdU);
+    oprf_Finalize(slotHash, 64, N, rwdU);
 
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
     crypto_generichash_state st;

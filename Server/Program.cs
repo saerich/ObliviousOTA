@@ -108,7 +108,7 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
         headerMs.Write(len.Value.Ciphertext);
     }
     byte[] header = headerMs.ToArray();
-    await ctx.Response.Body.WriteAsync(BitConverter.GetBytes(header.Length));
+    // await ctx.Response.Body.WriteAsync(BitConverter.GetBytes(header.Length));
     await ctx.Response.Body.WriteAsync(header);
     byte[] slots = [];
     const int slotSize = 4_194_304; // 4,194,304

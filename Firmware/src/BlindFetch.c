@@ -2,48 +2,12 @@
 #include <HTTP.h>
 #include <sodium.h>
 #include <string.h>
-
-// void BlindSelectFirmware(const char* selectServerURL, const char* deviceFirmwareKey, const char* username, const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], uint8_t rwdU[64])
-// {
-//     // uint8_t r[32];
-//     // uint8_t alpha[32];
-//     // oprf_Blind((const uint8_t*)firmwareFile, (uint16_t)strlen(firmwareFile), r, alpha);
-//     // char alphaStr[sizeof(alpha)*2+1];
-//     // URLEncodeByteArray(alpha, sizeof(alpha), alphaStr, sizeof(alphaStr));
-
-//     // char url[1024];
-//     // int statusCode = 0;
-    
-//     // // uint8_t encUsername[sizeof(username)+crypto_aead_chacha20poly1305_ietf_ABYTES];
-//     // // unsigned long long cLen;
-//     // // uint8_t nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES];
-//     // // randombytes_buf(nonce, sizeof(nonce));
-
-//     // // crypto_aead_xchacha20poly1305_ietf_encrypt(encUsername, &cLen, (const uint8_t*)username, (uint16_t)strlen(username), NULL, 0, NULL, nonce, skClient);
-    
-//     // // char usernameStr[sizeof(encUsername) * 2 + 1];
-//     // // URLEncodeByteArray(encUsername, sizeof(encUsername), usernameStr, sizeof(usernameStr));
-
-//     // snprintf(url, sizeof(url), "%s/Select?Alpha=%s&Username=%s", selectServerURL, alphaStr, username);
-//     // cJSON* selectResponse = HTTPGetJSON(url, &statusCode);
-
-//     // uint8_t beta[32]; //Retrieved from server.
-//     // const char* betaStr = cJSON_GetStringValue(selectResponse);
-//     // URLDecodeHexString(betaStr, beta);
-//     // cJSON_Delete(selectResponse);
-
-//     // uint8_t N[32];
-//     // oprf_Unblind(r, beta, N);
-//     // oprf_Finalize((const uint8_t*)firmwareFile, (uint16_t)strlen(firmwareFile), N, rwdU);
-// }
-
 #include <esp_log.h>
 #include <oprf/oprf.h>
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 #include <errno.h>
-#include <string.h>
-#include <HTTP.h>
+#include <esp_ota_ops.h>
 
 static bool socketBypassHttpHeaders(int sock)
 {
@@ -139,8 +103,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     //It doesn't matter if the server knows who downloaded *something*, as long as the device does not leak WHAT they downloaded?
     //This doesn't leak any keys, because this is just the "identity" value for the block.
 
-    char url[1024];
-    int statusCode = 0;
+    char* url = malloc(1024);;
     char fwHashString[sizeof(fwHash)*2+1];
     URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
 
@@ -150,13 +113,13 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     uint8_t alpha2[32];
 
     oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
-    oprf_Blind((const uint8_t*)fwHash, crypto_core_ristretto255_BYTES, r2, alpha2);
+    oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
 
     char alphaString[32*2+1];
     URLEncodeByteArray(alpha, 32, alphaString, sizeof(alphaString));
     char alpha2String[32*2+1];
     URLEncodeByteArray(alpha2, 32, alpha2String, sizeof(alpha2String));
-    snprintf(url, sizeof(url), "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
+    snprintf(url, 1024, "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
 
     //Now, we need to read the server response sensibly, header first, select the firmware, write choice to the correct ota provision.
     ESP_LOGI("Download", "Attempting to download from %s", url); 
@@ -174,10 +137,10 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     };
     struct addrinfo* res = NULL;
 
-    char host[64];
+    char* host = malloc(64);
     char port[6];
 
-    if(!splitHostAndPort(pUrl, host, sizeof(host), port, sizeof(port))) 
+    if(!splitHostAndPort(pUrl, host, 64, port, sizeof(port))) 
     {
         ESP_LOGE("HTTP", "Couldn't split host and port.");
         return;
@@ -185,6 +148,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
 
     int err = getaddrinfo(host, port, &hints, &res);
     if(err != 0 || !res) { ESP_LOGE("HTTP", "Could not getaddrinfo. %d", err); return; }
+    free(host);
 
     int sock = socket(res->ai_family, res->ai_socktype, 0);
     if(sock < 0)
@@ -212,6 +176,8 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         url, pUrl
     );
 
+    free(url);
+
     if(n <= 0 || n > (int)sizeof(req))
     {
         ESP_LOGE("HTTP", "Request too large.");
@@ -228,16 +194,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     if(!socketBypassHttpHeaders(sock))
     {
         ESP_LOGE("HTTP", "Failed to skip HTTP Headers.");
-        close(sock);
-        return;
-    }
-
-    // uint32_t headerLength = 0;
-    uint8_t header[4];
-
-    if(!socketReadExact(sock, header, 4))
-    {
-        ESP_LOGE("HTTP", "Could not read 4 bytes from header.");
         close(sock);
         return;
     }
@@ -274,7 +230,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     numberSKUs = ((uint32_t)numberOfSKUs[0]) | ((uint32_t)numberOfSKUs[1] << 8) | ((uint32_t)numberOfSKUs[2] << 16) | ((uint32_t) numberOfSKUs[3] << 24);
     
     int slotNumber = -1;
-    uint8_t actualSize[8];
+    uint64_t actualSize = 0;
     for(int i = 0; i < numberSKUs; i++)
     {
         uint8_t foundHash[crypto_hash_sha512_BYTES];
@@ -287,6 +243,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(memcmp(foundHash, fwHash, sizeof(fwHash)) == 0) 
         { 
             slotNumber = i; 
+            ESP_LOGI("Slot", "Found slot.");
             uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
             crypto_generichash_state slotSt;
             static const char* firmwareSzDomain = "firmwareSize";
@@ -297,11 +254,21 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             crypto_generichash_update(&slotSt, skClient, OPAQUE_SHARED_SECRETBYTES);
             crypto_generichash_final(&slotSt, slotAeadKey, 32);
             unsigned long long sizeRawLength = 0;
-            if(crypto_aead_chacha20poly1305_ietf_decrypt(actualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) != 0)
+            uint8_t tmpActualSize[8];
+            if(crypto_aead_chacha20poly1305_ietf_decrypt(tmpActualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) != 0)
             {
                 ESP_LOGE("Firmware", "Could not get actual firmware size.");
                 return;
             }
+
+            actualSize |= ((uint64_t)tmpActualSize[0] << 0);
+            actualSize |= ((uint64_t)tmpActualSize[1] << 8);
+            actualSize |= ((uint64_t)tmpActualSize[2] << 16);
+            actualSize |= ((uint64_t)tmpActualSize[3] << 24);
+            actualSize |= ((uint64_t)tmpActualSize[4] << 32);
+            actualSize |= ((uint64_t)tmpActualSize[5] << 40);
+            actualSize |= ((uint64_t)tmpActualSize[6] << 48);
+            actualSize |= ((uint64_t)tmpActualSize[7] << 56);
         }
 
     }
@@ -323,6 +290,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     crypto_generichash_update(&gSt, skClient, OPAQUE_SHARED_SECRETBYTES);
     crypto_generichash_final(&gSt, aeadKey, sizeof(aeadKey));
     
+    esp_ota_handle_t otaHandle;
+    const esp_partition_t* nextPartition = esp_ota_get_next_update_partition(NULL);
+    esp_ota_begin(nextPartition, actualSize, &otaHandle);
+
+    size_t remaining = actualSize;
     for(int i = 0; i < expectedBlocks; i++)
     {
         uint8_t nonce[12];
@@ -343,7 +315,19 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             ESP_ERROR_CHECK(ESP_ERR_INVALID_RESPONSE);
         }
 
-
+        size_t effectiveLength = (remaining < sizeof(raw) ? (size_t)remaining : sizeof(1024));
+        esp_ota_write(otaHandle, raw, effectiveLength);
+        
+        remaining -= effectiveLength;
+        if(remaining <= 0)
+        {
+            esp_app_desc_t appDesc;
+            esp_err_t err = esp_ota_get_partition_description(nextPartition, &appDesc);
+            ESP_ERROR_CHECK_WITHOUT_ABORT(err);
+            esp_ota_end(otaHandle);
+            close(sock);
+            return;
+        }
     }
     close(sock);
 
