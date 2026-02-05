@@ -78,6 +78,9 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
     byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
     byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
     
+    byte[] userKey = File.ReadAllBytes($"{req.Username}.osk");
+    File.Delete($"{req.Username}"); //Log the user out, one use per key.
+
     if(beta1 == null || beta2 == null) 
     { 
         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -95,10 +98,10 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
     
     foreach(var key in allFirmwareKeys) 
     {
-        byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(File.ReadAllBytes(key), req.Username);
+        byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
         headerMs.Write(fwHash ?? new byte[64]);
         long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
-        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(req.Username, seed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize));
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, seed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize));
         if(len == null) 
         {
             ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 
@@ -108,7 +111,6 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
         headerMs.Write(len.Value.Ciphertext);
     }
     byte[] header = headerMs.ToArray();
-    // await ctx.Response.Body.WriteAsync(BitConverter.GetBytes(header.Length));
     await ctx.Response.Body.WriteAsync(header);
     byte[] slots = [];
     const int slotSize = 4_194_304; // 4,194,304
@@ -129,7 +131,7 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
 
             byte[] deviceKey = File.ReadAllBytes(x.key);
 
-            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(req.Username, seed, deviceKey, plainText);
+            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(userKey, seed, deviceKey, plainText);
             if(encryptedFirmware == null) { Console.WriteLine("Null response."); break; }
 
             await ctx.Response.Body.WriteAsync(encryptedFirmware.Value.Nonce);

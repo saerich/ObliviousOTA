@@ -76,29 +76,23 @@ internal class InteropWrappers
         return beta;
     }
 
-    internal static byte[]? CreateKeyFromSKUKey(byte[] deviceKey, string username)
+    internal static byte[]? CreateKeyFromSKUKey(byte[] sk, byte[] deviceKey)
     {
-        if(!File.Exists($"{username}.osk")) { return null; }
-        byte[] sk = File.ReadAllBytes($"{username}.osk");
         byte[] fwHash = new byte[64];
         Interop.CreateKeyFromSKUKey(sk, deviceKey, fwHash);
         return fwHash;
     }
 
-    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmwareSize(string username, byte[] seed, byte[] slotHash, byte[] len)
+    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmwareSize(byte[] sk, byte[] seed, byte[] slotHash, byte[] len)
     {
-        if(!File.Exists($"{username}.osk")) { return null; }
-        byte[] sk = File.ReadAllBytes($"{username}.osk");
         byte[] cipherText = new byte[24];
         byte[] nonce = new byte[12];
         Interop.EncryptFirmwareSize(sk, seed, slotHash, len, nonce, cipherText);
         return (cipherText, nonce);
     }
 
-    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmware(string username, byte[] seed, byte[] deviceKey, byte[] firmwareBlock)
+    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmware(byte[] sk, byte[] seed, byte[] deviceKey, byte[] firmwareBlock)
     {
-        if(!File.Exists($"{username}.osk")) { return null; }
-        byte[] sk = File.ReadAllBytes($"{username}.osk");
         byte[] cipherText = new byte[1040];
         byte[] nonce = new byte[12];
         Interop.EncryptFirmware(sk, seed, deviceKey, firmwareBlock, nonce, cipherText);
