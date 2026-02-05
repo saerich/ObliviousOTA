@@ -89,7 +89,7 @@ internal class InteropWrappers
     {
         if(!File.Exists($"{username}.osk")) { return null; }
         byte[] sk = File.ReadAllBytes($"{username}.osk");
-        byte[] cipherText = new byte[8+16];
+        byte[] cipherText = new byte[24];
         byte[] nonce = new byte[12];
         Interop.EncryptFirmwareSize(sk, seed, slotHash, len, nonce, cipherText);
         return (cipherText, nonce);

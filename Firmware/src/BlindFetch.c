@@ -321,9 +321,16 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
+            sodium_memzero(aeadKey, sizeof(aeadKey));
+            sodium_memzero(rwdU, sizeof(rwdU));
+            sodium_memzero(rwdU2, sizeof(rwdU2));
             esp_app_desc_t appDesc;
             esp_err_t err = esp_ota_get_partition_description(nextPartition, &appDesc);
             ESP_ERROR_CHECK_WITHOUT_ABORT(err);
+            if(err != ESP_OK)
+            {
+                esp_partition_erase_range(nextPartition, 0, nextPartition->size);
+            }
             esp_ota_end(otaHandle);
             close(sock);
             return;
