@@ -315,7 +315,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             ESP_ERROR_CHECK(ESP_ERR_INVALID_RESPONSE);
         }
 
-        size_t effectiveLength = (remaining < sizeof(raw) ? (size_t)remaining : sizeof(1024));
+        size_t effectiveLength = (remaining < sizeof(raw) ? (size_t)remaining : sizeof(raw));
         esp_ota_write(otaHandle, raw, effectiveLength);
         
         remaining -= effectiveLength;
