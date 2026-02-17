@@ -84,9 +84,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     uint8_t deviceKey[crypto_core_ristretto255_BYTES];
     URLDecodeHexString(deviceFirmwareKey, deviceKey);
 
-    ESP_LOGI("DeviceKey", "Original Device Key %s", deviceFirmwareKey);
-    ESP_LOG_BUFFER_HEX("DeviceKey", deviceKey, sizeof(deviceKey));
-    
     //Okay, first off, we need to create an identifier for the specific file; we know the firmware key, and the server knows ALL the firmware keys.
     crypto_hash_sha512_state st;
     uint8_t fwHash[crypto_hash_sha512_BYTES];
@@ -96,8 +93,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     crypto_hash_sha512_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES); // Since the shared key is known by both the server and client, it's safe to use.
     crypto_hash_sha512_update(&st, (const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES); //Firmware key.
     crypto_hash_sha512_final(&st, fwHash);
-
-    ESP_LOG_BUFFER_HEX("Hash", fwHash, sizeof(fwHash));
 
     //Now, we have a unique per-session, unique per-firmware "code" that the server can construct too in the bundle, we need the header from the server, and we can retrieve beta[key] too.
     //It doesn't matter if the server knows who downloaded *something*, as long as the device does not leak WHAT they downloaded?
@@ -122,13 +117,10 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     snprintf(url, 1024, "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
 
     //Now, we need to read the server response sensibly, header first, select the firmware, write choice to the correct ota provision.
-    ESP_LOGI("Download", "Attempting to download from %s", url); 
 
     const char* pUrl = downloadServerURL;
     if(strncmp(downloadServerURL, "http://", 7) == 0) { pUrl += 7;}
     else if(strncmp(downloadServerURL, "https://", 8) == 0) { pUrl += 8; }
-
-    ESP_LOGI("Download", "URL: %s", pUrl);
 
     struct addrinfo hints = 
     {
@@ -205,13 +197,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
 
 
     socketReadExact(sock, beta, 32);
-    ESP_LOG_BUFFER_HEX("R", r, 32);
 
     if(oprf_Unblind(r, beta, N) != 0)
     {
         ESP_LOGE("OPRF", "Could not calculate N");
     }
-    ESP_LOG_BUFFER_HEX("beta", beta, 32);
     
     if(oprf_Finalize(deviceKey, crypto_core_ristretto255_BYTES, N, rwdU) != 0) 
     {
@@ -309,7 +299,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), NULL, 0, nonce, aeadKey) != 0)
         {
             ESP_LOGE("DECRYPT", "Decryption failed, for some reason.");
-            ESP_LOG_BUFFER_HEX("DECRYPT", nonce, sizeof(nonce));
             close(sock);
             return;
             ESP_ERROR_CHECK(ESP_ERR_INVALID_RESPONSE);
