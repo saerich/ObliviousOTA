@@ -77,6 +77,20 @@ bool splitHostAndPort(const char *in, char *host, size_t hostSize, char *port, s
     return true;
 }
 
+static bool socketSendAll(int sock, const void* data, size_t dataLen)
+{
+    const uint8_t* p = (const uint8_t*) data;
+    while(dataLen > 0)
+    {
+        int res = send(sock, p, len, NULL);
+        if(res < 0) { if(errno == EINTR) { continue; } return false; }
+        if(res == 0) { return false; }
+        p += (size_t) res;
+        dataLen -= (size_t) res;
+    }
+    return true;
+}
+
 
 
 void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirmwareKey, const char* username, const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES])
@@ -98,9 +112,9 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     //It doesn't matter if the server knows who downloaded *something*, as long as the device does not leak WHAT they downloaded?
     //This doesn't leak any keys, because this is just the "identity" value for the block.
 
-    char* url = malloc(1024);;
-    char fwHashString[sizeof(fwHash)*2+1];
-    URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
+    // char* url = malloc(1024);
+    // char fwHashString[sizeof(fwHash)*2+1];
+    // URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
 
     uint8_t r[32];
     uint8_t r2[32];
@@ -110,11 +124,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
     oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
 
-    char alphaString[32*2+1];
-    URLEncodeByteArray(alpha, 32, alphaString, sizeof(alphaString));
-    char alpha2String[32*2+1];
-    URLEncodeByteArray(alpha2, 32, alpha2String, sizeof(alpha2String));
-    snprintf(url, 1024, "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
+    // char alphaString[32*2+1];
+    // URLEncodeByteArray(alpha, 32, alphaString, sizeof(alphaString));
+    // char alpha2String[32*2+1];
+    // URLEncodeByteArray(alpha2, 32, alpha2String, sizeof(alpha2String));
+    // snprintf(url, 1024, "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
 
     //Now, we need to read the server response sensibly, header first, select the firmware, write choice to the correct ota provision.
 
@@ -157,31 +171,54 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         freeaddrinfo(res);
         return;
     }
-
+    size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + strlen(username);
     char req[512];
     int n = snprintf(req, sizeof(req), 
-        "GET %s HTTP/1.1\r\n"
+        "POST /Download HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Connection: close\r\n"
         "Accept: application/octet-stream\r\n"
+        "Content-Type: application/octet-stream\r\n"
+        "Content-Length: %zu\r\n"
         "\r\n",
-        url, pUrl
+        pUrl, bodyLen
     );
 
-    free(url);
+    uint8_t* body = malloc(bodyLen);
+    if(!body)
+    { 
+        ESP_LOGE("HTTP", "Could not allocate body");
+        close(sock);
+        return; 
+    }
+
+    memcpy(body, alpha, sizeof(alpha));
+    memcpy(body + sizeof(alpha), alpha2, sizeof(alpha2));
+    memcpy(body + sizeof(alpha) + sizeof(alpha2), username, strlen(username));
 
     if(n <= 0 || n > (int)sizeof(req))
     {
         ESP_LOGE("HTTP", "Request too large.");
+        free(body);
         close(sock);
         return;
     }
-    if(send(sock, req, n, 0) != n) 
+    if(!socketSendAll(sock, req, n)) 
     {
         ESP_LOGE("HTTP", "Send failed. Errno=%d, (%s)", errno, strerror(errno));
+        free(body);
         close(sock);
         return;
     }
+    if(!socketSendAll(sock, body, bodyLen))
+    {
+        ESP_LOGE("HTTP", "Could not send data packets to server.");
+        free(body);
+        close(sock);
+        return;
+    }
+
+    free(body);
 
     if(!socketBypassHttpHeaders(sock))
     {
@@ -310,7 +347,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
-            //Skip remaining blocks in present strea:
+            //Skip remaining blocks in present stream:
             if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i; 1052); }
             //if not in the last block:
             if(numberSKUs - slotNumber > 0) { socketSkipNBlocks(sock, numberSKUs-slotNumber, 1052); }
