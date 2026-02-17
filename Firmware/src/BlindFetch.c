@@ -310,6 +310,10 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
+            //Skip remaining blocks in present strea:
+            if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i; 1052); }
+            //if not in the last block:
+            if(numberSKUs - slotNumber > 0) { socketSkipNBlocks(sock, numberSKUs-slotNumber, 1052); }
             sodium_memzero(aeadKey, sizeof(aeadKey));
             sodium_memzero(rwdU, sizeof(rwdU));
             sodium_memzero(rwdU2, sizeof(rwdU2));
