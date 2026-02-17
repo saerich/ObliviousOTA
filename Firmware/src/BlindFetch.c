@@ -261,14 +261,14 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
                 return;
             }
 
-            actualSize |= ((uint64_t)tmpActualSize[0] << 0);
-            actualSize |= ((uint64_t)tmpActualSize[1] << 8);
-            actualSize |= ((uint64_t)tmpActualSize[2] << 16);
-            actualSize |= ((uint64_t)tmpActualSize[3] << 24);
-            actualSize |= ((uint64_t)tmpActualSize[4] << 32);
-            actualSize |= ((uint64_t)tmpActualSize[5] << 40);
-            actualSize |= ((uint64_t)tmpActualSize[6] << 48);
-            actualSize |= ((uint64_t)tmpActualSize[7] << 56);
+            actualSize = ((uint64_t)tmpActualSize[0] << 0) ||
+                ((uint64_t)tmpActualSize[1] << 8) ||
+                ((uint64_t)tmpActualSize[2] << 16) ||
+                ((uint64_t)tmpActualSize[3] << 24) ||
+                ((uint64_t)tmpActualSize[4] << 32) ||
+                ((uint64_t)tmpActualSize[5] << 40) ||
+                ((uint64_t)tmpActualSize[6] << 48) ||
+                ((uint64_t)tmpActualSize[7] << 56);
         }
 
     }
