@@ -71,20 +71,31 @@ app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
     return Results.Ok();     
 });
 
-app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest req) =>
+//TODO: Remap body, format A1|A2|Username
+app.MapPost("/Download", async (HttpContext ctx) =>
 {
-    byte[] alpha1 = Convert.FromHexString(req.Alpha1);
-    byte[] alpha2 = Convert.FromHexString(req.Alpha2);
+    byte[] alpha1 = new byte[32];
+    byte[] alpha2 = new byte[32];
+
+    await ctx.Request.Body.ReadExactlyAsync(alpha1);
+    await ctx.Request.Body.ReadExactlyAsync(alpha2);
+
     byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
     byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
+    byte[]? userKey = null;
+    using StreamReader reader = new(ctx.Request.Body, System.Text.Encoding.UTF8);
+    string username = await reader.ReadToEndAsync();
     
-    byte[] userKey = File.ReadAllBytes($"{req.Username}.osk");
-    File.Delete($"{req.Username}"); //Log the user out, one use per key.
-
-    if(beta1 == null || beta2 == null) 
-    { 
+    try
+    {
+        userKey = File.ReadAllBytes($"{username}.osk");
+        File.Delete($"{username}.osk"); //Log the user out, one use per key.
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine(ex);
         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return;
+        return;        
     }
 
     ctx.Response.ContentType = "application/octet-stream";
@@ -93,7 +104,14 @@ app.MapGet("/Download", async (HttpContext ctx, [AsParameters] DownloadRequest r
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
     headerMs.Write(beta2);
-    string[] allFirmwareKeys = Directory.GetFiles("Keys");
+    string[] allFirmwareKeys = Directory.GetFiles("Keys"); //Randomize slots.
+
+    for (int i = allFirmwareKeys.Length - 1; i > 0; i--)
+    {
+        int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
+        (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
+    }
+
     headerMs.Write(BitConverter.GetBytes(allFirmwareKeys.Length));
     
     foreach(var key in allFirmwareKeys) 

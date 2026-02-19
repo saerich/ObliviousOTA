@@ -82,7 +82,7 @@ static bool socketSendAll(int sock, const void* data, size_t dataLen)
     const uint8_t* p = (const uint8_t*) data;
     while(dataLen > 0)
     {
-        int res = send(sock, p, len, NULL);
+        int res = send(sock, p, dataLen, 0);
         if(res < 0) { if(errno == EINTR) { continue; } return false; }
         if(res == 0) { return false; }
         p += (size_t) res;
@@ -270,7 +270,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(memcmp(foundHash, fwHash, sizeof(fwHash)) == 0) 
         { 
             slotNumber = i; 
-            ESP_LOGI("Slot", "Found slot.");
+            ESP_LOGI("Slot", "Found slot %d.", slotNumber);
             uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
             crypto_generichash_state slotSt;
             static const char* firmwareSzDomain = "firmwareSize";
@@ -348,7 +348,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(remaining <= 0)
         {
             //Skip remaining blocks in present stream:
-            if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i; 1052); }
+            if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i, 1052); }
             //if not in the last block:
             if(numberSKUs - slotNumber > 0) { socketSkipNBlocks(sock, numberSKUs-slotNumber, 1052); }
             sodium_memzero(aeadKey, sizeof(aeadKey));
@@ -372,8 +372,4 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         }
     }
     close(sock);
-
-
-
-
 }
