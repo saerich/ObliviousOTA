@@ -24,6 +24,10 @@ cleanup();
 app.Lifetime.ApplicationStopping.Register(cleanup);
 
 Directory.CreateDirectory("Logs");
+if(!File.Exists("Logs/Executions.log"))
+{
+    File.WriteAllText("Logs/Executions.log", "Start Time,TTFB,TTLB,Aborted?,Aborted at\n");
+}
 
 byte[] seed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
@@ -77,6 +81,12 @@ app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
 app.MapPost("/Download", async (HttpContext ctx) =>
 {
     DateTime startTime = DateTime.UtcNow;
+    DateTime? aborted = null;
+    using var reg = ctx.RequestAborted.Register(() =>
+    {
+        aborted = DateTime.UtcNow;
+        Console.WriteLine("Client terminated early.");    
+    });
     byte[] alpha1 = new byte[32];
     byte[] alpha2 = new byte[32];
 
@@ -167,6 +177,6 @@ app.MapPost("/Download", async (HttpContext ctx) =>
     await ctx.Response.Body.FlushAsync();
     DateTime ttlb = DateTime.UtcNow;
     Console.WriteLine("Downloaded some firmware.");
-    File.AppendAllText($"Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime}\n");
+    File.AppendAllText($"Logs/Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime},{aborted == null},{(aborted == null ? "" : aborted - startTime)}\n");
 });
 app.Run();
