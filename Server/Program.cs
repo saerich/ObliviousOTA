@@ -23,6 +23,8 @@ var cleanup = () =>
 cleanup();
 app.Lifetime.ApplicationStopping.Register(cleanup);
 
+Directory.CreateDirectory("Logs");
+
 byte[] seed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
 if(!File.Exists("opaqueseed"))
@@ -74,6 +76,7 @@ app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
 //TODO: Remap body, format A1|A2|Username
 app.MapPost("/Download", async (HttpContext ctx) =>
 {
+    DateTime startTime = DateTime.UtcNow;
     byte[] alpha1 = new byte[32];
     byte[] alpha2 = new byte[32];
 
@@ -103,8 +106,9 @@ app.MapPost("/Download", async (HttpContext ctx) =>
     ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
+    DateTime ttfb = DateTime.UtcNow;
     headerMs.Write(beta2);
-    string[] allFirmwareKeys = Directory.GetFiles("Keys"); //Randomize slots.
+    string[] allFirmwareKeys = Directory.GetFiles("Keys");
 
     for (int i = allFirmwareKeys.Length - 1; i > 0; i--)
     {
@@ -161,7 +165,8 @@ app.MapPost("/Download", async (HttpContext ctx) =>
         fs.Close();
     }
     await ctx.Response.Body.FlushAsync();
+    DateTime ttlb = DateTime.UtcNow;
     Console.WriteLine("Downloaded some firmware.");
+    File.AppendAllText($"Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime}\n");
 });
-
 app.Run();
