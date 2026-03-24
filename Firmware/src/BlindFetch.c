@@ -302,9 +302,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         CalculateNonceKey(nonce, rwdU, (const uint8_t*)i, nonceKey);
 
         uint8_t aad[72];
-        memcpy(&aad[0], &slotNumber, 4);
-        memcpy(&aad[4], &i, 4);
-        memcpy(&aad[8], rwdU, sizeof(rwdU));
+        CreateAAD((const uint8_t*)slotNumber, (const uint8_t*)i, rwdU, aad);
 
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)
         {

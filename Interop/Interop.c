@@ -70,6 +70,14 @@ int CalculateNonceKey(const uint8_t nonce[crypto_aead_chacha20poly1305_ietf_NPUB
     return 0;
 }
 
+int CreateAAD(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t rwdU[64], uint8_t aad[72])
+{
+    memcpy(&aad[0], slotNumber, 4);
+    memcpy(&aad[4], blockNumber, 4);
+    memcpy(&aad[8], rwdU, 64);
+    return 0;
+}
+
 int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040])
 {
     uint8_t P[crypto_core_ristretto255_BYTES];
@@ -90,10 +98,8 @@ int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], c
     CalculateNonceKey(nonce, rwdU, blockNumber, nonceKey);
 
     //SlotNumber, blockNumber, fwHash;
-    uint8_t aad[4 + 4 + 64];
-    memcpy(&aad[0], slotNumber, 4);
-    memcpy(&aad[4], blockNumber, 4);
-    memcpy(&aad[8], rwdU, 64);
+    uint8_t aad[72];
+    CreateAAD(slotNumber, blockNumber, rwdU, aad);
 
     unsigned long long cLen = 0;
     if(crypto_aead_chacha20poly1305_ietf_encrypt(cipherText, &cLen, firmwareBlock, 1024, aad, sizeof(aad), NULL, nonceKey, aeadKey) != 0) { return -1; }

@@ -22,5 +22,6 @@ __attribute__((visibility("default"))) int EncryptFirmwareSize(const uint8_t skC
 int CalculateFirmwareSizeKey(const uint8_t rwdU[64], const uint8_t slotHash[64], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES]);
 int CalculateFirmwareFileKey(const uint8_t rwdU[64], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES]);
 int CalculateNonceKey(const uint8_t nonce[crypto_aead_chacha20poly1305_ietf_NPUBBYTES], const uint8_t rwdU[64], const uint8_t blockNumber[4], uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES]);
+int CreateAAD(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t rwdU[64], uint8_t aad[72]);
 
 #endif
