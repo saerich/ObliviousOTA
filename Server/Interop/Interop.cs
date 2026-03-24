@@ -37,7 +37,7 @@ internal static partial class Interop
     internal static partial int CreateKeyFromSKUKey([In] byte[] skClient, [In] byte[] deviceKey, [Out] byte[] fwHash);
 
     [LibraryImport(Library, EntryPoint = "EncryptFirmware")]
-    internal static partial int EncryptFirmware([In] byte[] skClient, [In] byte[] seed, [In] byte[] deviceKey, [In] byte[] firmwareFile, [Out] byte[] nonce, [Out] byte[] cipherText);
+    internal static partial int EncryptFirmware([In] byte[] slotNumber, [In] byte[] blockNumber, [In] byte[] skClient, [In] byte[] seed, [In] byte[] deviceKey, [In] byte[] firmwareFile, [Out] byte[] nonce, [Out] byte[] cipherText);
     [LibraryImport(Library, EntryPoint = "EncryptFirmwareSize")]
     internal static partial int EncryptFirmwareSize([In] byte[] skClient, [In] byte[] seed, [In] byte[] slotHash, [In] byte[] slotLength, [Out] byte[] nonce, [Out] byte[] cipherText);
 

@@ -91,11 +91,11 @@ internal class InteropWrappers
         return (cipherText, nonce);
     }
 
-    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmware(byte[] sk, byte[] seed, byte[] deviceKey, byte[] firmwareBlock)
+    internal static (byte[] Ciphertext, byte[] Nonce)? EncryptFirmware(int slotNumber, int blockNumber, byte[] sk, byte[] seed, byte[] deviceKey, byte[] firmwareBlock)
     {
         byte[] cipherText = new byte[1040];
         byte[] nonce = new byte[12];
-        Interop.EncryptFirmware(sk, seed, deviceKey, firmwareBlock, nonce, cipherText);
+        Interop.EncryptFirmware(BitConverter.GetBytes(slotNumber), BitConverter.GetBytes(blockNumber), sk, seed, deviceKey, firmwareBlock, nonce, cipherText);
         return (cipherText, nonce);
     }
 }

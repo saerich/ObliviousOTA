@@ -44,7 +44,7 @@ int CreateKeyFromSKUKey(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const
     return 0;
 }
 
-int EncryptFirmware(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040])
+int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040])
 {
     uint8_t P[crypto_core_ristretto255_BYTES];
     voprf_hash_to_group(deviceKey, crypto_scalarmult_SCALARBYTES, P);
@@ -66,8 +66,24 @@ int EncryptFirmware(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uin
     crypto_generichash_final(&st, aeadKey, 32);
 
     randombytes_buf(nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    
+    uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
+    static const char* nonceDomain = "blockNonce";
+    crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    crypto_generichash_update(&st, (const uint8_t*) nonceDomain, strlen(nonceDomain));
+    crypto_generichash_update(&st, nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    crypto_generichash_update(&st, rwdU, 64);
+    crypto_generichash_update(&st, blockNumber, 4);
+    crypto_generichash_final(&st, nonceKey, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+
+    //SlotNumber, blockNumber, fwHash;
+    uint8_t aad[4 + 4 + 64];
+    memcpy(&aad[0], slotNumber, 4);
+    memcpy(&aad[4], blockNumber, 4);
+    memcpy(&aad[8], rwdU, 64);
+
     unsigned long long cLen = 0;
-    if(crypto_aead_chacha20poly1305_ietf_encrypt(cipherText, &cLen, firmwareBlock, 1024, NULL, 0, NULL, nonce, aeadKey) != 0) { return -1; }
+    if(crypto_aead_chacha20poly1305_ietf_encrypt(cipherText, &cLen, firmwareBlock, 1024, aad, sizeof(aad), NULL, nonceKey, aeadKey) != 0) { return -1; }
     
     memset(P, 0, sizeof(P));
     memset(N, 0, sizeof(N));
@@ -75,7 +91,6 @@ int EncryptFirmware(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uin
     memset(aeadKey, 0, sizeof(aeadKey));
 
     return cLen == 1040 ? 0 : -1;
-
 }
 
 int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t slotHash[64], const uint8_t firmwareLength[8], uint8_t nonce[12], uint8_t cipherText[24])

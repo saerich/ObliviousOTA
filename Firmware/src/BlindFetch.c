@@ -108,14 +108,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     crypto_hash_sha512_update(&st, (const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES); //Firmware key.
     crypto_hash_sha512_final(&st, fwHash);
 
-    //Now, we have a unique per-session, unique per-firmware "code" that the server can construct too in the bundle, we need the header from the server, and we can retrieve beta[key] too.
-    //It doesn't matter if the server knows who downloaded *something*, as long as the device does not leak WHAT they downloaded?
-    //This doesn't leak any keys, because this is just the "identity" value for the block.
-
-    // char* url = malloc(1024);
-    // char fwHashString[sizeof(fwHash)*2+1];
-    // URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
-    
     uint8_t r[32];
     uint8_t r2[32];
     uint8_t alpha[32];
@@ -123,14 +115,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
 
     oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
     oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
-
-    // char alphaString[32*2+1];
-    // URLEncodeByteArray(alpha, 32, alphaString, sizeof(alphaString));
-    // char alpha2String[32*2+1];
-    // URLEncodeByteArray(alpha2, 32, alpha2String, sizeof(alpha2String));
-    // snprintf(url, 1024, "/Download?Username=%s&Alpha1=%s&Alpha2=%s", username, alphaString, alpha2String); //This could be in post to avoid needing to leak alpha or username in URL, Could probably also blind username with an alpha/flow earlier.
-
-    //Now, we need to read the server response sensibly, header first, select the firmware, write choice to the correct ota provision.
 
     const char* pUrl = downloadServerURL;
     if(strncmp(downloadServerURL, "http://", 7) == 0) { pUrl += 7;}
@@ -234,7 +218,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     uint8_t rwdU[64];
     uint8_t rwdU2[64];
 
-
     socketReadExact(sock, beta, 32);
 
     if(oprf_Unblind(r, beta, N) != 0)
@@ -335,7 +318,21 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         socketReadExact(sock, nonce, 12);
         socketReadExact(sock, cipherText, 1040);
 
-        if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), NULL, 0, nonce, aeadKey) != 0)
+        uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
+        static const char* nonceDomain = "blockNonce";
+        crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+        crypto_generichash_update(&st, (const uint8_t*) nonceDomain, strlen(nonceDomain));
+        crypto_generichash_update(&st, nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+        crypto_generichash_update(&st, rwdU, 64);
+        crypto_generichash_update(&st, i, 4);
+        crypto_generichash_final(&st, nonceKey, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+
+        uint8_t aad[72];
+        memcpy(&aad[0], slotNumber, 4);
+        memcpy(&aad[4], i, 4);
+        memcpy(&aad[8], rwdU, sizeof(rwdU));
+
+        if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)
         {
             ESP_LOGE("DECRYPT", "Decryption failed, for some reason.");
             close(sock);
@@ -384,7 +381,6 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
                 HTTPGet(url, &statusCode);
                 ESP_LOGI("KTV", "KTVs Sent to server, status code was %d", statusCode);
             #endif
-
 
             sodium_memzero(aeadKey, sizeof(aeadKey));
             sodium_memzero(rwdU, sizeof(rwdU));

@@ -11,7 +11,7 @@ __attribute__((visibility("default"))) int OpaqueLogin(const uint8_t ke1[OPAQUE_
 __attribute__((visibility("default"))) int OpaqueLoginVerify(const uint8_t authU0[crypto_auth_hmacsha512_BYTES], const uint8_t authU[crypto_auth_hmacsha512_BYTES]);
 __attribute__((visibility("default"))) int SelectOPRFEvaluate(const uint8_t alpha[32], const uint8_t sk[OPAQUE_SHARED_SECRETBYTES], uint8_t beta[32]);
 __attribute__((visibility("default"))) int CreateKeyFromSKUKey(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t deviceFirmwareKey[crypto_core_ristretto255_BYTES], uint8_t fwHash[crypto_hash_sha512_BYTES]);
-__attribute__((visibility("default"))) int EncryptFirmware(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040]);
+__attribute__((visibility("default"))) int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040]);
 __attribute__((visibility("default"))) int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t slotHash[64], const uint8_t firmwareLength[8], uint8_t nonce[12], uint8_t cipherText[24]);
 
 #endif

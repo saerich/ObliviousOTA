@@ -77,7 +77,12 @@ app.MapGet("/KTV", async([AsParameters] KTVRequest req) =>
     File.AppendAllText("Logs/KTV.csv", $"{DateTime.UtcNow},{req.Username},{req.Alpha1},{req.Alpha2},{req.Beta1},{req.Beta2},{req.N1},{req.N2},{req.RWDU1},{req.RWDU2},{req.FWHash},{req.DeviceKey},{req.RealBlocks},{req.AbsorbedBlocks},{req.SK}\n");
 });
 
-app.MapPost("/Download", async (HttpContext ctx) =>
+app.MapGet("/ClientLog", async([AsParameters] LogRequest req) =>
+{
+    
+});
+
+app.MapPost("/Download", async ctx =>
 {
     DateTime startTime = DateTime.UtcNow;
     DateTime? aborted = null;
@@ -153,7 +158,7 @@ app.MapPost("/Download", async (HttpContext ctx) =>
 
         long remaining = slotSize;
         byte[] plainText = new byte[1024];
-
+        int block = 0;
         while(remaining > 0)
         {
             int read = await fs.ReadAsync(plainText, 0, (int)Math.Min(1024, remaining));
@@ -162,7 +167,7 @@ app.MapPost("/Download", async (HttpContext ctx) =>
 
             byte[] deviceKey = File.ReadAllBytes(x.key);
 
-            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(userKey, seed, deviceKey, plainText);
+            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(x.idx, block++, userKey, seed, deviceKey, plainText);
             if(encryptedFirmware == null) { Console.WriteLine("Null response."); break; }
 
             await ctx.Response.Body.WriteAsync(encryptedFirmware.Value.Nonce);
