@@ -4,11 +4,6 @@ using ObliviousOTA.Models.Request;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.ConfigureKestrel(x => 
-{
-    x.ListenAnyIP(5234);
-});
-
 
 var app = builder.Build();
 
@@ -77,7 +72,11 @@ app.MapGet("/LoginVerify", ([AsParameters] LoginVerifyRequest req) =>
     return Results.Ok();     
 });
 
-//TODO: Remap body, format A1|A2|Username
+app.MapGet("/KTV", async([AsParameters] KTVRequest req) =>
+{
+    File.AppendAllText("Logs/KTV.csv", $"{DateTime.UtcNow},{req.Username},{req.Alpha1},{req.Alpha2},{req.Beta1},{req.Beta2},{req.N1},{req.N2},{req.RWDU1},{req.RWDU2},{req.FWHash},{req.DeviceKey},{req.RealBlocks},{req.AbsorbedBlocks},{req.SK}\n");
+});
+
 app.MapPost("/Download", async (HttpContext ctx) =>
 {
     DateTime startTime = DateTime.UtcNow;

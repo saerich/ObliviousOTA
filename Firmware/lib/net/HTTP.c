@@ -128,7 +128,8 @@ void HTTPGet(const char* url, int* statusCode)
         .method = HTTP_METHOD_GET,
         .event_handler = onHttpReceive,
         .user_data = &ctx,
-        .crt_bundle_attach = esp_crt_bundle_attach
+        .crt_bundle_attach = esp_crt_bundle_attach,
+        .buffer_size_tx = 4096
     };
 
     esp_http_client_handle_t cli = esp_http_client_init(&config);

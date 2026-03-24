@@ -115,7 +115,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     // char* url = malloc(1024);
     // char fwHashString[sizeof(fwHash)*2+1];
     // URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
-
+    
     uint8_t r[32];
     uint8_t r2[32];
     uint8_t alpha[32];
@@ -228,7 +228,9 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     }
 
     uint8_t beta[32];
+    uint8_t beta2[32];
     uint8_t N[32];
+    uint8_t N2[32];
     uint8_t rwdU[64];
     uint8_t rwdU2[64];
 
@@ -247,9 +249,9 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         return;
     }
     
-    socketReadExact(sock, beta, 32); //2nd Beta.
-    oprf_Unblind(r2, beta, N);
-    oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N, rwdU2);
+    socketReadExact(sock, beta2, 32); //2nd Beta.
+    oprf_Unblind(r2, beta2, N2);
+    oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N2, rwdU2);
 
     uint8_t numberOfSKUs[4];
     socketReadExact(sock, numberOfSKUs, sizeof(numberOfSKUs));
@@ -288,13 +290,13 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
                 return;
             }
 
-            actualSize = ((uint64_t)tmpActualSize[0] << 0) ||
-                ((uint64_t)tmpActualSize[1] << 8) ||
-                ((uint64_t)tmpActualSize[2] << 16) ||
-                ((uint64_t)tmpActualSize[3] << 24) ||
-                ((uint64_t)tmpActualSize[4] << 32) ||
-                ((uint64_t)tmpActualSize[5] << 40) ||
-                ((uint64_t)tmpActualSize[6] << 48) ||
+            actualSize = ((uint64_t)tmpActualSize[0] << 0) |
+                ((uint64_t)tmpActualSize[1] << 8) |
+                ((uint64_t)tmpActualSize[2] << 16) |
+                ((uint64_t)tmpActualSize[3] << 24) |
+                ((uint64_t)tmpActualSize[4] << 32) |
+                ((uint64_t)tmpActualSize[5] << 40) |
+                ((uint64_t)tmpActualSize[6] << 48) |
                 ((uint64_t)tmpActualSize[7] << 56);
         }
 
@@ -351,6 +353,39 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i, 1052); }
             //if not in the last block:
             if(numberSKUs - slotNumber > 0) { socketSkipNBlocks(sock, numberSKUs-slotNumber, 1052); }
+
+            //Send R, Alpha, Beta, N, RWDU to server, only if KTVs are enabled.
+            #ifdef SEND_KTVS
+                char* url = malloc(2048);
+                char fwHashString[sizeof(fwHash)*2+1];
+                URLEncodeByteArray(fwHash, sizeof(fwHash), fwHashString, sizeof(fwHashString));
+                
+                char alphaString[32*2+1];
+                URLEncodeByteArray(alpha, 32, alphaString, sizeof(alphaString));
+                char alpha2String[32*2+1];
+                URLEncodeByteArray(alpha2, 32, alpha2String, sizeof(alpha2String));
+                char betaString[32*2+1];
+                URLEncodeByteArray(beta, 32, betaString, sizeof(betaString));
+                char beta2String[32*2+1];
+                URLEncodeByteArray(beta2, 32, beta2String, sizeof(beta2String));
+                char nString[32*2+1];
+                URLEncodeByteArray(N, 32, nString, sizeof(nString));
+                char n2String[32*2+1];
+                URLEncodeByteArray(N2, 32, n2String, sizeof(n2String));
+                char rwdString[64*2+1];
+                URLEncodeByteArray(rwdU, 64, rwdString, sizeof(rwdString));
+                char rwd2String[64*2+1];
+                URLEncodeByteArray(rwdU2, 64, rwd2String, sizeof(rwd2String));
+                char skStr[64*2+1];
+                URLEncodeByteArray(skClient, 64, skStr, sizeof(skStr));
+                snprintf(url, 2048, "%s/KTV?Username=%s&Alpha1=%s&Alpha2=%s&Beta1=%s&Beta2=%s&N1=%s&N2=%s&rwdU1=%s&rwdU2=%s&deviceKey=%s&fwHash=%s&realBlocks=%llu&absorbedBlocks=%u&sk=%s", 
+                    downloadServerURL, username, alphaString, alpha2String, betaString, beta2String, nString, n2String, rwdString, rwd2String, deviceFirmwareKey, fwHashString, actualSize, i+1, skStr); 
+                int statusCode = 0;
+                HTTPGet(url, &statusCode);
+                ESP_LOGI("KTV", "KTVs Sent to server, status code was %d", statusCode);
+            #endif
+
+
             sodium_memzero(aeadKey, sizeof(aeadKey));
             sodium_memzero(rwdU, sizeof(rwdU));
             sodium_memzero(rwdU2, sizeof(rwdU2));

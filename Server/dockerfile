@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /Build
+COPY . .
+RUN dotnet publish -c Release -o /Publish
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /Server
+COPY --from=build /Publish .
+
+ENTRYPOINT [ "dotnet", "Server.dll" ]

@@ -1,0 +1,7 @@
+services:
+  api:
+    image: registry.digitalocean.com/nebula/ObliviousOTA/Server
+    build: 
+      context: .
+      dockerfile: dockerfile
+      target: runtime
