@@ -8,6 +8,7 @@
 #include "lwip/netdb.h"
 #include <errno.h>
 #include <esp_ota_ops.h>
+#include "../../Interop/Interop.h"
 
 static bool socketBypassHttpHeaders(int sock)
 {
@@ -91,22 +92,14 @@ static bool socketSendAll(int sock, const void* data, size_t dataLen)
     return true;
 }
 
-
-
 void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirmwareKey, const char* username, const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES])
 {
     uint8_t deviceKey[crypto_core_ristretto255_BYTES];
     URLDecodeHexString(deviceFirmwareKey, deviceKey);
 
     //Okay, first off, we need to create an identifier for the specific file; we know the firmware key, and the server knows ALL the firmware keys.
-    crypto_hash_sha512_state st;
     uint8_t fwHash[crypto_hash_sha512_BYTES];
-    crypto_hash_sha512_init(&st);
-    static const char* firmwareDomain = "fw";
-    crypto_hash_sha512_update(&st, (const uint8_t*)firmwareDomain, (uint16_t)strlen(firmwareDomain));
-    crypto_hash_sha512_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES); // Since the shared key is known by both the server and client, it's safe to use.
-    crypto_hash_sha512_update(&st, (const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES); //Firmware key.
-    crypto_hash_sha512_final(&st, fwHash);
+    CreateKeyFromSKUKey(skClient, deviceKey, fwHash);
 
     uint8_t r[32];
     uint8_t r2[32];
@@ -257,14 +250,8 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             slotNumber = i; 
             ESP_LOGI("Slot", "Found slot %d.", slotNumber);
             uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-            crypto_generichash_state slotSt;
-            static const char* firmwareSzDomain = "firmwareSize";
-            crypto_generichash_init(&slotSt, NULL, 0, 32);
-            crypto_generichash_update(&slotSt, (const uint8_t*) firmwareSzDomain, strlen(firmwareSzDomain));
-            crypto_generichash_update(&slotSt, rwdU2, 64);
-            crypto_generichash_update(&slotSt, fwHash, 64);
-            crypto_generichash_update(&slotSt, skClient, OPAQUE_SHARED_SECRETBYTES);
-            crypto_generichash_final(&slotSt, slotAeadKey, 32);
+            CalculateFirmwareSizeKey(rwdU2, fwHash, skClient, slotAeadKey);
+
             unsigned long long sizeRawLength = 0;
             uint8_t tmpActualSize[8];
             if(crypto_aead_chacha20poly1305_ietf_decrypt(tmpActualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) != 0)
@@ -293,14 +280,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     ESP_LOGI("Download", "Skipped %d blocks", skipBlocks);
     
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-    crypto_generichash_state gSt;
-    static const char* firmwareFileDomain = "firmwareFile";
-    crypto_generichash_init(&gSt, NULL, 0, sizeof(aeadKey));
-    crypto_generichash_update(&gSt, (const uint8_t*) firmwareFileDomain, strlen(firmwareFileDomain));
-    crypto_generichash_update(&gSt, rwdU, 64);
-    crypto_generichash_update(&gSt, deviceKey, crypto_core_ristretto255_BYTES);
-    crypto_generichash_update(&gSt, skClient, OPAQUE_SHARED_SECRETBYTES);
-    crypto_generichash_final(&gSt, aeadKey, sizeof(aeadKey));
+    CalculateFirmwareFileKey(rwdU, deviceKey, skClient, aeadKey);
     
     esp_ota_handle_t otaHandle;
     const esp_partition_t* nextPartition = esp_ota_get_next_update_partition(NULL);
@@ -319,17 +299,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         socketReadExact(sock, cipherText, 1040);
 
         uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
-        static const char* nonceDomain = "blockNonce";
-        crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
-        crypto_generichash_update(&st, (const uint8_t*) nonceDomain, strlen(nonceDomain));
-        crypto_generichash_update(&st, nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
-        crypto_generichash_update(&st, rwdU, 64);
-        crypto_generichash_update(&st, i, 4);
-        crypto_generichash_final(&st, nonceKey, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+        CalculateNonceKey(nonce, rwdU, (const uint8_t*)i, nonceKey);
 
         uint8_t aad[72];
-        memcpy(&aad[0], slotNumber, 4);
-        memcpy(&aad[4], i, 4);
+        memcpy(&aad[0], &slotNumber, 4);
+        memcpy(&aad[4], &i, 4);
         memcpy(&aad[8], rwdU, sizeof(rwdU));
 
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)

@@ -44,6 +44,32 @@ int CreateKeyFromSKUKey(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const
     return 0;
 }
 
+int CalculateFirmwareFileKey(const uint8_t rwdU[64], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES])
+{
+    crypto_generichash_state st;
+    static const char* firmwareFileDomain = "firmwareFile";
+    crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_KEYBYTES);
+    crypto_generichash_update(&st, (const uint8_t*) firmwareFileDomain, strlen(firmwareFileDomain));
+    crypto_generichash_update(&st, rwdU, 64);
+    crypto_generichash_update(&st, deviceKey, crypto_scalarmult_SCALARBYTES);
+    crypto_generichash_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES);
+    crypto_generichash_final(&st, aeadKey, crypto_aead_chacha20poly1305_ietf_KEYBYTES);
+    return 0;
+}
+
+int CalculateNonceKey(const uint8_t nonce[crypto_aead_chacha20poly1305_ietf_NPUBBYTES], const uint8_t rwdU[64], const uint8_t blockNumber[4], uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES])
+{
+    crypto_generichash_state st;
+    static const char* nonceDomain = "blockNonce";
+    crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    crypto_generichash_update(&st, (const uint8_t*) nonceDomain, strlen(nonceDomain));
+    crypto_generichash_update(&st, nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    crypto_generichash_update(&st, rwdU, 64);
+    crypto_generichash_update(&st, blockNumber, 4);
+    crypto_generichash_final(&st, nonceKey, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    return 0;
+}
+
 int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t deviceKey[crypto_scalarmult_SCALARBYTES], const uint8_t firmwareBlock[1024], uint8_t nonce[12], uint8_t cipherText[1040])
 {
     uint8_t P[crypto_core_ristretto255_BYTES];
@@ -56,25 +82,12 @@ int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], c
     oprf_Finalize(deviceKey, crypto_scalarmult_SCALARBYTES, N, rwdU);
 
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-    crypto_generichash_state st;
-    static const char* firmwareFileDomain = "firmwareFile";
-    crypto_generichash_init(&st, NULL, 0, 32);
-    crypto_generichash_update(&st, (const uint8_t*) firmwareFileDomain, strlen(firmwareFileDomain));
-    crypto_generichash_update(&st, rwdU, 64);
-    crypto_generichash_update(&st, deviceKey, crypto_scalarmult_SCALARBYTES);
-    crypto_generichash_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES);
-    crypto_generichash_final(&st, aeadKey, 32);
+    CalculateFirmwareFileKey(rwdU, deviceKey, skClient, aeadKey);
 
     randombytes_buf(nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
     
     uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
-    static const char* nonceDomain = "blockNonce";
-    crypto_generichash_init(&st, NULL, 0, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
-    crypto_generichash_update(&st, (const uint8_t*) nonceDomain, strlen(nonceDomain));
-    crypto_generichash_update(&st, nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
-    crypto_generichash_update(&st, rwdU, 64);
-    crypto_generichash_update(&st, blockNumber, 4);
-    crypto_generichash_final(&st, nonceKey, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
+    CalculateNonceKey(nonce, rwdU, blockNumber, nonceKey);
 
     //SlotNumber, blockNumber, fwHash;
     uint8_t aad[4 + 4 + 64];
@@ -93,6 +106,19 @@ int EncryptFirmware(const uint8_t slotNumber[4], const uint8_t blockNumber[4], c
     return cLen == 1040 ? 0 : -1;
 }
 
+int CalculateFirmwareSizeKey(const uint8_t rwdU[64], const uint8_t slotHash[64], const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES])
+{
+    crypto_generichash_state st;
+    static const char* firmwareSzDomain = "firmwareSize";
+    crypto_generichash_init(&st, NULL, 0, 32);
+    crypto_generichash_update(&st, (const uint8_t*) firmwareSzDomain, strlen(firmwareSzDomain));
+    crypto_generichash_update(&st, rwdU, 64);
+    crypto_generichash_update(&st, slotHash, 64);
+    crypto_generichash_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES);
+    crypto_generichash_final(&st, aeadKey, 32);
+    return 0;
+}
+
 int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const uint8_t seed[crypto_scalarmult_SCALARBYTES], const uint8_t slotHash[64], const uint8_t firmwareLength[8], uint8_t nonce[12], uint8_t cipherText[24])
 {
     uint8_t P[crypto_core_ristretto255_BYTES];
@@ -105,14 +131,7 @@ int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const
     oprf_Finalize(slotHash, 64, N, rwdU);
 
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-    crypto_generichash_state st;
-    static const char* firmwareSzDomain = "firmwareSize";
-    crypto_generichash_init(&st, NULL, 0, 32);
-    crypto_generichash_update(&st, (const uint8_t*) firmwareSzDomain, strlen(firmwareSzDomain));
-    crypto_generichash_update(&st, rwdU, 64);
-    crypto_generichash_update(&st, slotHash, 64);
-    crypto_generichash_update(&st, skClient, OPAQUE_SHARED_SECRETBYTES);
-    crypto_generichash_final(&st, aeadKey, 32);
+    CalculateFirmwareSizeKey(rwdU, slotHash, skClient, aeadKey);
 
     randombytes_buf(nonce, crypto_aead_chacha20poly1305_ietf_NPUBBYTES);
     unsigned long long cLen = 0;
