@@ -4,6 +4,10 @@ COPY . .
 RUN dotnet publish -c Release -o /Publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /Server
+RUN apt-get update && apt-get install -y build-essential cmake pkg-config libsodium-dev
 COPY --from=build /Publish .
+COPY --from=build /Build/Keys ./Keys
+COPY --from=build /Build/Firmware ./Firmware
+COPY --from=build /Build/opaqueseed .
 
 ENTRYPOINT [ "dotnet", "Server.dll" ]

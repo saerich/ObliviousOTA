@@ -1,11 +1,14 @@
-using Microsoft.AspNetCore.Mvc;
 using ObliviousOTA.Interop;
 using ObliviousOTA.Models.Request;
-using System.Text.Json;
 
-var builder = WebApplication.CreateBuilder(args);
+var b = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+b.WebHost.ConfigureKestrel(x =>
+{
+    x.Limits.MinRequestBodyDataRate = null;
+});
+
+var app = b.Build();
 
 var cleanup = () =>
 {
@@ -91,6 +94,7 @@ app.MapPost("/Download", async ctx =>
         aborted = DateTime.UtcNow;
         Console.WriteLine("Client terminated early.");    
     });
+    
     byte[] alpha1 = new byte[32];
     byte[] alpha2 = new byte[32];
 
@@ -117,10 +121,9 @@ app.MapPost("/Download", async ctx =>
 
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
-    ctx.Response.Headers.TransferEncoding = "identity";
+    // ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
-    DateTime ttfb = DateTime.UtcNow;
     headerMs.Write(beta2);
     string[] allFirmwareKeys = Directory.GetFiles("Keys");
 
@@ -148,6 +151,7 @@ app.MapPost("/Download", async ctx =>
     }
     byte[] header = headerMs.ToArray();
     await ctx.Response.Body.WriteAsync(header);
+    DateTime ttfb = DateTime.UtcNow;
     byte[] slots = [];
     const int slotSize = 4_194_304; // 4,194,304
 

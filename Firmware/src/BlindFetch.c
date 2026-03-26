@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <esp_ota_ops.h>
 #include "../../Interop/Interop.h"
+#include <esp_http_client.h>
 
 static bool socketBypassHttpHeaders(int sock)
 {
@@ -108,64 +109,12 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
 
     oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
     oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
-
-    const char* pUrl = downloadServerURL;
-    if(strncmp(downloadServerURL, "http://", 7) == 0) { pUrl += 7;}
-    else if(strncmp(downloadServerURL, "https://", 8) == 0) { pUrl += 8; }
-
-    struct addrinfo hints = 
-    {
-        .ai_family = AF_INET,
-        .ai_socktype = SOCK_STREAM
-    };
-    struct addrinfo* res = NULL;
-
-    char* host = malloc(64);
-    char port[6];
-
-    if(!splitHostAndPort(pUrl, host, 64, port, sizeof(port))) 
-    {
-        ESP_LOGE("HTTP", "Couldn't split host and port.");
-        return;
-    }
-
-    int err = getaddrinfo(host, port, &hints, &res);
-    if(err != 0 || !res) { ESP_LOGE("HTTP", "Could not getaddrinfo. %d", err); return; }
-    free(host);
-
-    int sock = socket(res->ai_family, res->ai_socktype, 0);
-    if(sock < 0)
-    {
-        ESP_LOGE("HTTP", "Socket failed to open.");
-        freeaddrinfo(res);
-        return;
-    }
-
-    if(connect(sock, res->ai_addr, res->ai_addrlen) != 0)
-    {
-        ESP_LOGE("HTTP", "Failed to connect.");
-        close(sock);
-        freeaddrinfo(res);
-        return;
-    }
+    
     size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + strlen(username);
-    char req[512];
-    int n = snprintf(req, sizeof(req), 
-        "POST /Download HTTP/1.1\r\n"
-        "Host: %s\r\n"
-        "Connection: close\r\n"
-        "Accept: application/octet-stream\r\n"
-        "Content-Type: application/octet-stream\r\n"
-        "Content-Length: %zu\r\n"
-        "\r\n",
-        pUrl, bodyLen
-    );
-
     uint8_t* body = malloc(bodyLen);
     if(!body)
     { 
         ESP_LOGE("HTTP", "Could not allocate body");
-        close(sock);
         return; 
     }
 
@@ -173,36 +122,107 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     memcpy(body + sizeof(alpha), alpha2, sizeof(alpha2));
     memcpy(body + sizeof(alpha) + sizeof(alpha2), username, strlen(username));
 
-    if(n <= 0 || n > (int)sizeof(req))
-    {
-        ESP_LOGE("HTTP", "Request too large.");
-        free(body);
-        close(sock);
-        return;
-    }
-    if(!socketSendAll(sock, req, n)) 
-    {
-        ESP_LOGE("HTTP", "Send failed. Errno=%d, (%s)", errno, strerror(errno));
-        free(body);
-        close(sock);
-        return;
-    }
-    if(!socketSendAll(sock, body, bodyLen))
-    {
-        ESP_LOGE("HTTP", "Could not send data packets to server.");
-        free(body);
-        close(sock);
-        return;
-    }
-
+    int statusCode = 0;
+    esp_http_client_handle_t c;
+    ESP_ERROR_CHECK(TLSPost(downloadServerURL, "/Download", body, bodyLen, &c, &statusCode));
     free(body);
 
-    if(!socketBypassHttpHeaders(sock))
-    {
-        ESP_LOGE("HTTP", "Failed to skip HTTP Headers.");
-        close(sock);
-        return;
-    }
+    #ifdef HTTP_ONLY
+    // const char* pUrl = downloadServerURL;
+    // if(strncmp(downloadServerURL, "http://", 7) == 0) { pUrl += 7;}
+    // else if(strncmp(downloadServerURL, "https://", 8) == 0) { pUrl += 8; }
+
+    // struct addrinfo hints = 
+    // {
+    //     .ai_family = AF_INET,
+    //     .ai_socktype = SOCK_STREAM
+    // };
+    // struct addrinfo* res = NULL;
+
+    // char* host = malloc(64);
+    // char port[6];
+
+    // if(!splitHostAndPort(pUrl, host, 64, port, sizeof(port))) 
+    // {
+    //     ESP_LOGE("HTTP", "Couldn't split host and port.");
+    //     return;
+    // }
+
+    // int err = getaddrinfo(host, port, &hints, &res);
+    // if(err != 0 || !res) { ESP_LOGE("HTTP", "Could not getaddrinfo. %d", err); return; }
+    // free(host);
+
+    // int sock = socket(res->ai_family, res->ai_socktype, 0);
+    // if(sock < 0)
+    // {
+    //     ESP_LOGE("HTTP", "Socket failed to open.");
+    //     freeaddrinfo(res);
+    //     return;
+    // }
+
+    // if(connect(sock, res->ai_addr, res->ai_addrlen) != 0)
+    // {
+    //     ESP_LOGE("HTTP", "Failed to connect.");
+    //     close(sock);
+    //     freeaddrinfo(res);
+    //     return;
+    // }
+    // size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + strlen(username);
+    // char req[512];
+    // int n = snprintf(req, sizeof(req), 
+    //     "POST /Download HTTP/1.1\r\n"
+    //     "Host: %s\r\n"
+    //     "Connection: close\r\n"
+    //     "Accept: application/octet-stream\r\n"
+    //     "Content-Type: application/octet-stream\r\n"
+    //     "Content-Length: %zu\r\n"
+    //     "\r\n",
+    //     pUrl, bodyLen
+    // );
+
+    // uint8_t* body = malloc(bodyLen);
+    // if(!body)
+    // { 
+    //     ESP_LOGE("HTTP", "Could not allocate body");
+    //     close(sock);
+    //     return; 
+    // }
+
+    // memcpy(body, alpha, sizeof(alpha));
+    // memcpy(body + sizeof(alpha), alpha2, sizeof(alpha2));
+    // memcpy(body + sizeof(alpha) + sizeof(alpha2), username, strlen(username));
+
+    // if(n <= 0 || n > (int)sizeof(req))
+    // {
+    //     ESP_LOGE("HTTP", "Request too large.");
+    //     free(body);
+    //     close(sock);
+    //     return;
+    // }
+    // if(!socketSendAll(sock, req, n)) 
+    // {
+    //     ESP_LOGE("HTTP", "Send failed. Errno=%d, (%s)", errno, strerror(errno));
+    //     free(body);
+    //     close(sock);
+    //     return;
+    // }
+    // if(!socketSendAll(sock, body, bodyLen))
+    // {
+    //     ESP_LOGE("HTTP", "Could not send data packets to server.");
+    //     free(body);
+    //     close(sock);
+    //     return;
+    // }
+
+    // free(body);
+
+    // if(!socketBypassHttpHeaders(sock))
+    // {
+    //     ESP_LOGE("HTTP", "Failed to skip HTTP Headers.");
+    //     close(sock);
+    //     return;
+    // }
+    #endif
 
     uint8_t beta[32];
     uint8_t beta2[32];
@@ -210,8 +230,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     uint8_t N2[32];
     uint8_t rwdU[64];
     uint8_t rwdU2[64];
-
-    socketReadExact(sock, beta, 32);
+    ResponseReadUpTo(c, beta, 32);
 
     if(oprf_Unblind(r, beta, N) != 0)
     {
@@ -221,16 +240,17 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     if(oprf_Finalize(deviceKey, crypto_core_ristretto255_BYTES, N, rwdU) != 0) 
     {
         ESP_LOGE("OPRF", "Could not finalize N");
-        close(sock);
+        HttpFree(&c);
         return;
     }
     
-    socketReadExact(sock, beta2, 32); //2nd Beta.
+    ResponseReadUpTo(c, beta2, 32);
     oprf_Unblind(r2, beta2, N2);
     oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N2, rwdU2);
 
     uint8_t numberOfSKUs[4];
-    socketReadExact(sock, numberOfSKUs, sizeof(numberOfSKUs));
+    ResponseReadUpTo(c, numberOfSKUs, sizeof(numberOfSKUs));
+
     uint32_t numberSKUs = 0;
     numberSKUs = ((uint32_t)numberOfSKUs[0]) | ((uint32_t)numberOfSKUs[1] << 8) | ((uint32_t)numberOfSKUs[2] << 16) | ((uint32_t) numberOfSKUs[3] << 24);
     
@@ -239,11 +259,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     for(int i = 0; i < numberSKUs; i++)
     {
         uint8_t foundHash[crypto_hash_sha512_BYTES];
-        socketReadExact(sock, foundHash, sizeof(foundHash));
+        ResponseReadUpTo(c, foundHash, sizeof(foundHash));
         uint8_t sizeNonce[12];
         uint8_t sizeCrypt[24];
-        socketReadExact(sock, sizeNonce, sizeof(sizeNonce));
-        socketReadExact(sock, sizeCrypt, sizeof(sizeCrypt));
+        ResponseReadUpTo(c, sizeNonce, sizeof(sizeNonce));
+        ResponseReadUpTo(c, sizeCrypt, sizeof(sizeCrypt));
 
         if(memcmp(foundHash, fwHash, sizeof(fwHash)) == 0) 
         { 
@@ -274,10 +294,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     if(slotNumber == -1) { ESP_ERROR_CHECK(ESP_ERR_HW_CRYPTO_BASE); }
 
     int expectedBlocks = 4096;
-    int skipBlocks = slotNumber * expectedBlocks; //4096 = 4mb firmware image / 1024 byte block sizes.
-    socketSkipNBlocks(sock, skipBlocks, 1052);
+    int discardBlocks = slotNumber * expectedBlocks; //4096 = 4mb firmware image / 1024 byte block sizes.
+    //Effectively we want to read and discard n bytes, in blocks, each block is 1052 bytes,  slot number * expectedBlocks * 1052 = total bytes to read and discard.
+    ResponseDiscard(c, discardBlocks * 1052);
 
-    ESP_LOGI("Download", "Skipped %d blocks", skipBlocks);
+    ESP_LOGI("Download", "Skipped %d blocks", discardBlocks);
     
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
     CalculateFirmwareFileKey(rwdU, deviceKey, skClient, aeadKey);
@@ -286,7 +307,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     const esp_partition_t* nextPartition = esp_ota_get_next_update_partition(NULL);
     esp_ota_begin(nextPartition, actualSize, &otaHandle);
 
-    size_t remaining = actualSize;
+    int remaining = actualSize;
     for(int i = 0; i < expectedBlocks; i++)
     {
         uint8_t nonce[12];
@@ -295,8 +316,8 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
 
         unsigned long long rawLen;
 
-        socketReadExact(sock, nonce, 12);
-        socketReadExact(sock, cipherText, 1040);
+        ResponseReadUpTo(c, nonce, 12);
+        ResponseReadUpTo(c, cipherText, 1040);
 
         uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
         CalculateNonceKey(nonce, rwdU, (const uint8_t*)i, nonceKey);
@@ -307,7 +328,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)
         {
             ESP_LOGE("DECRYPT", "Decryption failed, for some reason.");
-            close(sock);
+            HttpFree(&c);
             return;
             ESP_ERROR_CHECK(ESP_ERR_INVALID_RESPONSE);
         }
@@ -318,10 +339,12 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
-            //Skip remaining blocks in present stream:
-            if(expectedBlocks - i > 0) { socketSkipNBlocks(sock, expectedBlocks - i, 1052); }
+            expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
+            esp_http_client_flush_response(c, NULL); //No point in manually flushing, this does it for us.
+            //Read and Discard remaining blocks in present stream:
+            // if((expectedBlocks - i) > 0) { ResponseDiscard(c, (expectedBlocks - i) * 1052); }
             //if not in the last block:
-            if(numberSKUs - slotNumber > 0) { socketSkipNBlocks(sock, numberSKUs-slotNumber, 1052); }
+            // if(numberSKUs - slotNumber > 0) { ResponseDiscard(c, ((numberSKUs - slotNumber) * expectedBlocks) * 1052); } //Read and discard all blocks remaining on stream.
 
             //Send R, Alpha, Beta, N, RWDU to server, only if KTVs are enabled.
             #ifdef SEND_KTVS
@@ -364,15 +387,17 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             {
                 esp_partition_erase_range(nextPartition, 0, nextPartition->size);
                 esp_ota_end(otaHandle);
-                close(sock);
+                HttpFree(&c);
                 return;
             }
-            close(sock);
+            HttpFree(&c);
             esp_ota_end(otaHandle);
             esp_ota_set_boot_partition(nextPartition);
             esp_restart();
             return;
         }
     }
-    close(sock);
+
+    
+    HttpFree(&c);
 }

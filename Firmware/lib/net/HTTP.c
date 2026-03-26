@@ -1,6 +1,4 @@
 #include "HTTP.h"
-#include <esp_http_client.h>
-#include <esp_err.h>
 #include <esp_log.h>
 #include <esp_crt_bundle.h>
 #include <sodium.h>
@@ -182,4 +180,101 @@ void URLDecodeHexString(const char* hexString, uint8_t* output)
 {
     size_t loops = strlen(hexString)/2;
     for(size_t i = 0; i < loops; i++) { sscanf(hexString + (i*2), "%2hhx", &output[i]); }
+}
+
+esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody, const size_t bodySize, esp_http_client_handle_t* client, int* statusCode)
+{
+    char url[256];
+    snprintf(url, sizeof(url), "%s%s", baseURL, path);
+
+    esp_http_client_config_t cfg = 
+    {
+        .url = url,
+        .method = HTTP_METHOD_POST,
+        .timeout_ms = 30000,
+        .buffer_size = 1024,
+        .buffer_size_tx = 1024,
+        .crt_bundle_attach = esp_crt_bundle_attach,
+    };
+
+    *client = esp_http_client_init(&cfg);
+    if(*client == NULL)
+    {
+        ESP_LOGE("HTTP", "Could not init http client.");
+        return ESP_FAIL;
+    }
+
+    esp_err_t err;
+    err = esp_http_client_set_header(*client, "Content-Type", "application/octet-stream");
+    if(err != ESP_OK) { return err; }
+    err = esp_http_client_set_header(*client, "Accept", "application/octet-stream");
+    if(err != ESP_OK) { return err; }
+
+    err = esp_http_client_open(*client, bodySize);
+    if(err != ESP_OK) 
+    {
+        ESP_LOGE("HTTP", "Couldn't open ESP HTTP Client %s", esp_err_to_name(err)); 
+        return err; 
+    }
+
+    size_t written = 0;
+    while(written < bodySize)
+    {
+        int thisWrite = esp_http_client_write(*client, (const char*)postBody + written, bodySize - written);
+        if(thisWrite < 0)
+        {
+            ESP_LOGE("HTTP", "Could not write to HTTP Client");
+            return ESP_FAIL;
+        }
+        written += (size_t) thisWrite;
+    }
+
+    int contentLength = esp_http_client_fetch_headers(*client);
+
+    *statusCode = esp_http_client_get_status_code(*client);
+    if(*statusCode > 299)
+    {
+        ESP_LOGE("HTTP", "HTTP Status code is not OK %d", statusCode);
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+
+}
+
+int ResponseReadUpTo(esp_http_client_handle_t client, uint8_t* buf, int len)
+{
+    int total = 0;
+    while(total < len)
+    {
+        int r = esp_http_client_read(client, (char*)buf + total, len - total);
+        if(r < 0) { return -1; }
+        if(r == 0) { return total; }
+        total += r;
+    }
+    return total;
+}
+
+esp_err_t ResponseDiscard(esp_http_client_handle_t client, size_t total)
+{
+    uint8_t buf[256];
+    int remaining = total;
+
+    while(remaining > 0)
+    {
+        size_t chunk = remaining < sizeof(buf) ? remaining : sizeof(buf);
+        int r = ResponseReadUpTo(client, buf, chunk);
+        if(r <= 0 ) { return ESP_FAIL; }
+        remaining -= r;
+    }
+    return ESP_OK;
+}
+
+void HttpFree(esp_http_client_handle_t *client)
+{
+    if(*client)
+    {
+        esp_http_client_close(*client);
+        esp_http_client_cleanup(*client);
+        *client = NULL;
+    }
 }

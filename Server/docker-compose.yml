@@ -1,6 +1,6 @@
 services:
   api:
-    image: registry.digitalocean.com/nebula/ObliviousOTA/Server
+    image: registry.digitalocean.com/nebula/obliviousota/server
     build: 
       context: .
       dockerfile: dockerfile
