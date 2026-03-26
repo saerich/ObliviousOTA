@@ -256,8 +256,10 @@ int ResponseReadUpTo(esp_http_client_handle_t client, uint8_t* buf, int len)
 
 esp_err_t ResponseDiscard(esp_http_client_handle_t client, size_t total)
 {
-    uint8_t buf[256];
+    uint8_t buf[4096];
     int remaining = total;
+
+    int loops = 0;
 
     while(remaining > 0)
     {
@@ -265,11 +267,23 @@ esp_err_t ResponseDiscard(esp_http_client_handle_t client, size_t total)
         int r = ResponseReadUpTo(client, buf, chunk);
         if(r <= 0 ) { return ESP_FAIL; }
         remaining -= r;
+
+        if((++loops & 0x1F) == 0) { vTaskDelay(1); }
     }
     return ESP_OK;
 }
 
-void HttpFree(esp_http_client_handle_t *client)
+void HttpDrainAndFree(esp_http_client_handle_t* client)
+{
+    if(*client)
+    {
+        int discarded = 0;
+        esp_http_client_flush_response(*client, discarded);
+        HttpFree(client);
+    }
+}
+
+void HttpFree(esp_http_client_handle_t* client)
 {
     if(*client)
     {

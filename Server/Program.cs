@@ -1,3 +1,4 @@
+using System.Text;
 using ObliviousOTA.Interop;
 using ObliviousOTA.Models.Request;
 
@@ -97,15 +98,23 @@ app.MapPost("/Download", async ctx =>
     
     byte[] alpha1 = new byte[32];
     byte[] alpha2 = new byte[32];
-
+    byte[] unameLen = new byte[4];
+    
     await ctx.Request.Body.ReadExactlyAsync(alpha1);
     await ctx.Request.Body.ReadExactlyAsync(alpha2);
+    await ctx.Request.Body.ReadExactlyAsync(unameLen);
+
+    byte[] unameBuf = new byte[BitConverter.ToInt32(unameLen)];
+    await ctx.Request.Body.ReadExactlyAsync(unameBuf);
+    
 
     byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
     byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
     byte[]? userKey = null;
-    using StreamReader reader = new(ctx.Request.Body, System.Text.Encoding.UTF8);
-    string username = await reader.ReadToEndAsync();
+
+
+    //using StreamReader reader = new(ctx.Request.Body, System.Text.Encoding.UTF8);
+    string username = Encoding.UTF8.GetString(unameBuf);
     
     try
     {

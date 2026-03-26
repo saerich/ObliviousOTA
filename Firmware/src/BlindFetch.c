@@ -110,18 +110,27 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
     oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
     
-    size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + strlen(username);
+    size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + sizeof(uint32_t) + strlen(username);
     uint8_t* body = malloc(bodyLen);
     if(!body)
     { 
         ESP_LOGE("HTTP", "Could not allocate body");
         return; 
     }
+    uint8_t* p = body;
+    
+    memcpy(p, alpha, sizeof(alpha));
+    p += sizeof(alpha);
 
-    memcpy(body, alpha, sizeof(alpha));
-    memcpy(body + sizeof(alpha), alpha2, sizeof(alpha2));
-    memcpy(body + sizeof(alpha) + sizeof(alpha2), username, strlen(username));
-
+    memcpy(p, alpha2, sizeof(alpha2));
+    p += sizeof(alpha2);
+    
+    uint32_t unameLen = strlen(username);
+    memcpy(p, &unameLen, sizeof(unameLen));
+    p += sizeof(unameLen);
+    
+    memcpy(p, username, strlen(username));
+    
     int statusCode = 0;
     esp_http_client_handle_t c;
     ESP_ERROR_CHECK(TLSPost(downloadServerURL, "/Download", body, bodyLen, &c, &statusCode));
@@ -240,7 +249,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     if(oprf_Finalize(deviceKey, crypto_core_ristretto255_BYTES, N, rwdU) != 0) 
     {
         ESP_LOGE("OPRF", "Could not finalize N");
-        HttpFree(&c);
+        HttpDrainAndFree(&c);
         return;
     }
     
@@ -298,7 +307,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     //Effectively we want to read and discard n bytes, in blocks, each block is 1052 bytes,  slot number * expectedBlocks * 1052 = total bytes to read and discard.
     ResponseDiscard(c, discardBlocks * 1052);
 
-    ESP_LOGI("Download", "Skipped %d blocks", discardBlocks);
+    ESP_LOGI("Download", "Discarded %d blocks", discardBlocks);
     
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
     CalculateFirmwareFileKey(rwdU, deviceKey, skClient, aeadKey);
@@ -340,7 +349,9 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(remaining <= 0)
         {
             expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
-            esp_http_client_flush_response(c, NULL); //No point in manually flushing, this does it for us.
+            int discarded = 0;
+            esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
+            ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
             //Read and Discard remaining blocks in present stream:
             // if((expectedBlocks - i) > 0) { ResponseDiscard(c, (expectedBlocks - i) * 1052); }
             //if not in the last block:
