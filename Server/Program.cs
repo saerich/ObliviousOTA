@@ -199,6 +199,6 @@ app.MapPost("/Download", async ctx =>
     await ctx.Response.Body.FlushAsync();
     DateTime ttlb = DateTime.UtcNow;
     Console.WriteLine("Downloaded some firmware.");
-    File.AppendAllText($"Logs/Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime},{aborted == null},{(aborted == null ? "" : aborted - startTime)}\n");
+    File.AppendAllText($"Logs/Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime},{aborted != null},{(aborted == null ? "" : aborted - startTime)}\n");
 });
 app.Run();
