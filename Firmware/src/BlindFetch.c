@@ -130,7 +130,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     p += sizeof(unameLen);
     
     memcpy(p, username, strlen(username));
-    
+
     int statusCode = 0;
     esp_http_client_handle_t c;
     ESP_ERROR_CHECK(TLSPost(downloadServerURL, "/Download", body, bodyLen, &c, &statusCode));
@@ -311,12 +311,15 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     
     uint8_t aeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
     CalculateFirmwareFileKey(rwdU, deviceKey, skClient, aeadKey);
+    ESP_LOGI("Encryption", "Calculated Device firmware file key");
     
     esp_ota_handle_t otaHandle;
     const esp_partition_t* nextPartition = esp_ota_get_next_update_partition(NULL);
     esp_ota_begin(nextPartition, actualSize, &otaHandle);
 
-    int remaining = actualSize;
+    ESP_LOGI("OTA", "Selected next OTA partition");
+
+    long remaining = actualSize;
     for(int i = 0; i < expectedBlocks; i++)
     {
         uint8_t nonce[12];
@@ -348,7 +351,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
-            expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
+            //expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
             int discarded = 0;
             esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
             ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
