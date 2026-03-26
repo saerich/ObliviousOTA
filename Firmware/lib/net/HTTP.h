@@ -20,5 +20,6 @@ esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody
 int ResponseReadUpTo(esp_http_client_handle_t client, uint8_t* buf, int len);
 void HttpFree(esp_http_client_handle_t *client);
 esp_err_t ResponseDiscard(esp_http_client_handle_t client, size_t total);
+void HttpDrainAndFree(esp_http_client_handle_t* client);
 
 #endif

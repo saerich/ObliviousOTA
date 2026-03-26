@@ -278,7 +278,7 @@ void HttpDrainAndFree(esp_http_client_handle_t* client)
     if(*client)
     {
         int discarded = 0;
-        esp_http_client_flush_response(*client, discarded);
+        esp_http_client_flush_response(*client, &discarded);
         HttpFree(client);
     }
 }
