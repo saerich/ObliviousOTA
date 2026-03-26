@@ -53,6 +53,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     int statusCode = 0;
     esp_http_client_handle_t c;
     ESP_ERROR_CHECK(TLSPost(downloadServerURL, "/Download", body, bodyLen, &c, &statusCode));
+
     free(body);
 
     uint8_t beta[32];

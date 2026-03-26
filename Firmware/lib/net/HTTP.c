@@ -209,6 +209,8 @@ esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody
     if(err != ESP_OK) { return err; }
     err = esp_http_client_set_header(*client, "Accept", "application/octet-stream");
     if(err != ESP_OK) { return err; }
+    err = esp_http_client_set_header(*client, "Accept-Encoding", "identity");
+    if(err != ESP_OK) { return err; }
 
     err = esp_http_client_open(*client, bodySize);
     if(err != ESP_OK) 
@@ -230,11 +232,12 @@ esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody
     }
 
     int contentLength = esp_http_client_fetch_headers(*client);
+    ESP_LOGI("HTTP", "Receiving %d bytes", contentLength);
 
     *statusCode = esp_http_client_get_status_code(*client);
     if(*statusCode > 299)
     {
-        ESP_LOGE("HTTP", "HTTP Status code is not OK %d", statusCode);
+        ESP_LOGE("HTTP", "HTTP Status code is not OK %d", *statusCode);
         return ESP_FAIL;
     }
     return ESP_OK;

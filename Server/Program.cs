@@ -134,7 +134,7 @@ app.MapPost("/Download", async ctx =>
 
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
-    ctx.Response.ContentLength = 68L + (firmwareCount * 100L * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 68L = beta 1, 2 and number of firmware.
+    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 72L = beta 1, 2 and number of firmware.
     
     // ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
@@ -147,7 +147,7 @@ app.MapPost("/Download", async ctx =>
         (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
     }
 
-    headerMs.Write(BitConverter.GetBytes(firmwareCount));
+    headerMs.Write(BitConverter.GetBytes((int)firmwareCount));
     
     foreach(var key in allFirmwareKeys) 
     {
