@@ -129,28 +129,32 @@ app.MapPost("/Download", async ctx =>
         return;        
     }
 
+    string[] allFirmwareKeys = Directory.GetFiles("Keys");
+    long firmwareCount = allFirmwareKeys.Length;
+
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
+    ctx.Response.ContentLength = 68L + (firmwareCount * 100L * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 68L = beta 1, 2 and number of firmware.
+    
     // ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
     headerMs.Write(beta2);
-    string[] allFirmwareKeys = Directory.GetFiles("Keys");
 
-    for (int i = allFirmwareKeys.Length - 1; i > 0; i--)
+    for (int i = (int)firmwareCount - 1; i > 0; i--)
     {
         int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
         (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
     }
 
-    headerMs.Write(BitConverter.GetBytes(allFirmwareKeys.Length));
+    headerMs.Write(BitConverter.GetBytes(firmwareCount));
     
     foreach(var key in allFirmwareKeys) 
     {
         byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
         headerMs.Write(fwHash ?? new byte[64]);
         long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
-        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, seed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize));
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, seed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
         if(len == null) 
         {
             ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 
