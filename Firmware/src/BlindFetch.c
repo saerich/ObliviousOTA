@@ -151,13 +151,17 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         unsigned long long rawLen;
 
         ResponseReadUpTo(c, nonce, 12);
+        ESP_LOGI("Encryption", "Received raw nonce");
         ResponseReadUpTo(c, cipherText, 1040);
+        ESP_LOGI("Encryption", "Retrieved ciphertext.");
 
         uint8_t nonceKey[crypto_aead_chacha20poly1305_ietf_NPUBBYTES];
-        CalculateNonceKey(nonce, rwdU, (const uint8_t*)i, nonceKey);
+        CalculateNonceKey(nonce, rwdU, (const uint8_t*)&i, nonceKey);
+        ESP_LOGI("Encryption", "Calculated nonce key");
 
         uint8_t aad[72];
-        CreateAAD((const uint8_t*)slotNumber, (const uint8_t*)i, rwdU, aad);
+        CreateAAD((const uint8_t*)&slotNumber, (const uint8_t*)&i, rwdU, aad);
+        ESP_LOGI("Encryption", "Calculated AAD");
 
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)
         {

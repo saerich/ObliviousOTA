@@ -191,7 +191,7 @@ esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody
     {
         .url = url,
         .method = HTTP_METHOD_POST,
-        .timeout_ms = 30000,
+        .timeout_ms = 3600000,
         .buffer_size = 1024,
         .buffer_size_tx = 1024,
         .crt_bundle_attach = esp_crt_bundle_attach,
@@ -256,20 +256,27 @@ int ResponseReadUpTo(esp_http_client_handle_t client, uint8_t* buf, int len)
 
 esp_err_t ResponseDiscard(esp_http_client_handle_t client, size_t total)
 {
-    uint8_t buf[4096];
+    uint8_t* buf = malloc(16384);
+    // uint8_t buf[4096];
     int remaining = total;
 
     int loops = 0;
 
     while(remaining > 0)
     {
-        size_t chunk = remaining < sizeof(buf) ? remaining : sizeof(buf);
-        int r = ResponseReadUpTo(client, buf, chunk);
-        if(r <= 0 ) { return ESP_FAIL; }
+        int take = (remaining < 16384 ? remaining : 16384);
+        int r = esp_http_client_read(client, (char*)buf, take);
+
+        if(r <= 0 ) 
+        {
+            free(buf); 
+            return ESP_FAIL; 
+        }
         remaining -= r;
 
         if((++loops & 0x1F) == 0) { vTaskDelay(1); }
     }
+    free(buf);
     return ESP_OK;
 }
 

@@ -7,6 +7,7 @@ var b = WebApplication.CreateBuilder(args);
 b.WebHost.ConfigureKestrel(x =>
 {
     x.Limits.MinRequestBodyDataRate = null;
+    x.Limits.KeepAliveTimeout = TimeSpan.FromHours(1); //Server is miles away atm, this should be lower.
 });
 
 var app = b.Build();
