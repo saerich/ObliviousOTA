@@ -1,0 +1,185 @@
+
+/*
+ *  Author: Darren Nevin
+ *  Model Name: proof.spthy
+ *  Status: DEVELOPMENTAL
+ *
+ *  Comments:
+ */
+
+theory BlindFetch
+begin 
+
+    section{* OPAQUE *}
+
+    //builtins:
+
+    functions:
+        SharedKey/4,
+        OpaqueLoginRequest/3, //OPAQUE proof of password, pwd not sent on wire.
+        OpaqueLoginResponse/4 [private]
+    //equations: 
+
+    rule InitServer:
+        [ Fr(~opaqueseed), Fr(~dfk), Fr(~numberSKUs), Fr(~slotNumber), Fr(~sizeNonce), Fr(~actualSize), Fr(~blockNonce), Fr(~block), Fr(~blockIndex) ]
+        --[ ServerStarted(~opaqueseed) ]->
+        [ !ServerSeed(~opaqueseed), !AllFirmwareInfo(~dfk, ~numberSKUs, ~slotNumber, ~sizeNonce, ~actualSize, ~blockNonce, ~blockIndex, ~block) ]
+
+    rule RegisterClient:
+        [ Fr(~client), Fr(~pwd), !ServerSeed(seed) ]
+        --[ ClientRegistered(~client) ]->
+        [ !Registered(~client, ~pwd, seed), !ClientRecord(~client, ~pwd) ]
+
+    rule ClientStartLogin:
+        [ !ClientRecord(client, pwd), !Registered(client, pwd, seed), Fr(~nonceCli) ]
+        --[ ClientLoginStart(client) ]->
+        [ StClientLogin(client, pwd, seed, ~nonceCli), Out(<client, pwd, ~nonceCli>) ]
+
+    rule ServerLoginResponse:
+        [ !ServerSeed(seed), !Registered(client, pwd, seed), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<client, pwd, nonceCli>), Fr(~nonceServer)]
+        --[ ServerAcceptedLogin(client), ServerKeyEstablished(client, SharedKey(seed, pwd, nonceCli, ~nonceServer)) ]->
+        [ StServerLogin(client, SharedKey(seed, pwd, nonceCli, ~nonceServer)), !AllServerKeys(client, dfk), Out(<client, nonceCli, OpaqueLoginResponse(client, pwd, nonceCli, ~nonceServer), ~nonceServer>) ]
+
+    rule ClientFinishLogin:
+        [ StClientLogin(client, pwd, seed, nonceCli), !AllServerKeys(client, dfk), In(<client, nonceCli, OpaqueLoginResponse(client, pwd, nonceCli, nonceServer), nonceServer>) ]
+        --[ ClientKeyEstablished(client, SharedKey(seed, pwd, nonceCli, nonceServer)), Secret(SharedKey(seed, pwd, nonceCli, nonceServer)) ]->
+        [ StClientKey(client, SharedKey(seed, pwd, nonceCli, nonceServer)), !StClientHasDfk(client, dfk)]
+
+    lemma ServerAcceptImpliesClientLoginStart:
+    "All client k #i.
+        ServerKeyEstablished(client, k) @ i
+        ==> Ex #j. ClientLoginStart(client) @ j & j < i"
+
+    lemma ClientKeyImpliesServerKey:
+    "All client k #i.
+        ClientKeyEstablished(client, k) @ i
+        ==> Ex #j. ServerKeyEstablished(client, k) @ j"
+
+    lemma SharedKeySecrecy:
+    "All k #i.
+        Secret(k) @ i
+        ==> not (Ex #j. K(k) @ j)"
+
+
+    section{* BlindFetch *}
+
+    builtins: hashing, symmetric-encryption
+
+    functions:
+        OprfBlind/2,
+        OprfEval/2,
+        OprfUnblind/2,
+        OprfFinalize/2,
+        OprfValue/2,
+        FwHashProps/2,
+        ManifestEntry/4,
+        Manifest/2,
+        AEADSize/3,
+        AEADBlock/6,
+        FileKey/3,
+        SizeKey/3,
+        AAD/3
+
+    rule ClientRequestFirmware:
+    let
+        alpha1 = OprfBlind(dfk, ~r1)
+        alpha2 = OprfBlind(h(FwHashProps(sk, dfk)), ~r2)
+    in
+        [ StClientKey(client, sk), !StClientHasDfk(client, dfk), Fr(~r1), Fr(~r2) ]
+        --[ ClientLoggedOut(client), ClientBlindRequest(client, alpha1, alpha2) ]->
+        [ StBlindFetchWait(client, sk, dfk, ~r1, ~r2, alpha1, alpha2), !StClientHasDfk(client, dfk), Out(<client, alpha1, alpha2>) ]
+
+    rule ServerSendHeader:
+    let
+        fwHash = h(FwHashProps(sk, dfk))
+        beta1 = OprfEval(alpha1, seed)
+        beta2 = OprfEval(alpha2, seed)
+        rwdu1 = OprfValue(dfk, seed)
+        rwdu2 = OprfValue(fwHash, seed)
+    in
+        [ StServerLogin(client, sk), !AllServerKeys(client, dfk), !ServerSeed(seed), In(<client, alpha1, alpha2>) ]
+        --[ SeedUsed(seed), AlphaObserved(alpha1), AlphaObserved(alpha2), BlindFetchHeadersSent(client, beta1, beta2) ]->
+        [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllServerKeys(client, dfk), Out(<beta1, beta2>) ]
+
+    rule ClientReceiveHeader:
+    let
+        fwHash = h(FwHashProps(sk, dfk))
+        n1 = OprfUnblind(r1, beta1)
+        n2 = OprfUnblind(r2, beta2)
+        rwdu1 = OprfFinalize(dfk, n1)
+        rwdu2 = OprfFinalize(fwHash, n2)
+    in
+        [ StBlindFetchWait(client, sk, dfk, r1, r2, alpha1, alpha2), In(<beta1, beta2>) ]
+        --[ HeaderAccepted(client, beta1, beta2), FileSecretReleased(client, dfk, rwdu1), SizeSecretReleased(client, fwHash, rwdu2) ]->
+        [ StHeaderAccepted(client, sk, dfk, fwHash, beta1, beta2, rwdu1, rwdu2) ]
+
+    rule ServerSendManifest:
+    let
+        firmwareHash = h(FwHashProps(sk, dfk))
+        sizeKey = SizeKey(rwdu2, sk, firmwareHash)
+        encSize = senc(actualSize, sizeKey)
+    in
+        [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block) ]
+        --[ ]->
+        [ StManifestSent(client, sk, dfk, rwdu1), Out(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
+
+    rule ClientReceiveManifest:
+    let
+        expectedFwHash = h(FwHashProps(sk, dfk))
+        sizeKey = SizeKey(rwdu2, sk, expectedFwHash)
+        actualSize = sdec(encSize, sizeKey)
+    in
+        [ StHeaderAccepted(client, sk, dfk, expectedFwHash, beta1, beta2, rwdu1, rwdu2), In(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
+        --[ ManifestAccepted(client, slotNumber, expectedFwHash, sizeNonce, actualSize) ]->
+        [ StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize) ]
+
+    rule ServerSendChunks:
+    let
+        fileKey = FileKey(rwdu1, sk, dfk)
+        encBlock = senc(block, fileKey)
+    in
+        [ StManifestSent(client, sk, dfk, rwdu1), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block)]
+        --[ ChunkSent(client, blockIndex) ]->
+        [ Out(<blockNonce, encBlock>) ]
+
+    rule ClientReceiveChunks:
+    let
+        fileKey = FileKey(rwdu1, sk, dfk)
+        block = sdec(encBlock, fileKey)
+    in
+        [StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize), In(<blockNonce, encBlock>) ]
+        --[  ]->
+        [] //Process finished, device restarts, nothing emitted.
+
+
+    lemma SeedIsSecret:
+    "All seed #i.
+        SeedUsed(seed) @ i
+        ==> not (Ex #j. K(seed) @ j)"
+
+    lemma HeaderAcceptedImpliesBlindRequest:
+    "All client beta1 beta2 #i.
+        HeaderAccepted(client, beta1, beta2) @ i
+        ==> Ex alpha1 alpha2 #j. ClientBlindRequest(client, alpha1, alpha2) @ j & j < i"
+
+    lemma FileSecretSecrecy:
+    "All client dfk rwdu1 #i.
+        FileSecretReleased(client, dfk, rwdu1) @ i
+        ==> not (Ex #j. K(rwdu1) @ j)"
+
+    lemma SizeSecretSecrecy:
+    "All client fwHash rwdu2 #i.
+        SizeSecretReleased(client, fwHash, rwdu2) @ i
+        ==> not (Ex #j. K(rwdu2) @ j)"
+    // lemma BlindFetchRequestSources [sources]:
+    // "All client alpha1 alpha2 #i.
+    //     In(<client, alpha1, alpha2>) @ i
+    //     ==>
+    //     (Ex #j. KU(<client, alpha1, alpha2>) @ j & j < i) | (Ex #j. ClientBlindRequest(client, alpha1, alpha2) @ j & j < i)"
+
+end
+
+///AAD = slotNumber| blockNumber | rwdU (where RWDU = hash of deviceKey, after being voprf hash_to_group'd)
+//firmwareFileKey = h(rwdU, deviceKey, sk)
+//nonceKey = trunc96(h(nonce, rwdU, blockNumber))
+//firmwareSizeKey = h(rwdU | slotHash | sk) (nonce is random value and sent alongside)
