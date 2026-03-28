@@ -15,8 +15,10 @@ begin
     //builtins:
 
     functions:
-        SharedKey/4,
-        OpaqueLoginRequest/3, //OPAQUE proof of password, pwd not sent on wire.
+        ServerKnowsPassword/2,
+        SharedKey/3,
+        OpaqueBlindedPassword/2,
+        OpaqueLoginRequest/3 [private],
         OpaqueLoginResponse/4 [private]
     //equations: 
 
@@ -27,23 +29,28 @@ begin
 
     rule RegisterClient:
         [ Fr(~client), Fr(~pwd), !ServerSeed(seed) ]
-        --[ ClientRegistered(~client) ]->
-        [ !Registered(~client, ~pwd, seed), !ClientRecord(~client, ~pwd) ]
+        --[ ClientRegistered(~client), PasswordCreated(~client, ~pwd), ClientKnowsPassword(~client, ~pwd) ]->
+        [ !ClientRecord(~client, ~pwd), Out(<~client, OpaqueBlindedPassword(~pwd, seed)>) ]
+
+    rule ServerRegister:
+        [ In(<client, verifier>) ]
+        --[]->
+        [ !Registered(client, verifier) ]
 
     rule ClientStartLogin:
-        [ !ClientRecord(client, pwd), !Registered(client, pwd, seed), Fr(~nonceCli) ]
+        [ !ClientRecord(client, pwd), !Registered(client, verifier), Fr(~nonceCli) ]
         --[ ClientLoginStart(client) ]->
-        [ StClientLogin(client, pwd, seed, ~nonceCli), Out(<client, pwd, ~nonceCli>) ]
+        [ StClientLogin(client, verifier, ~nonceCli), Out(<client, OpaqueLoginRequest(client, pwd, ~nonceCli), ~nonceCli>) ]
 
     rule ServerLoginResponse:
-        [ !ServerSeed(seed), !Registered(client, pwd, seed), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<client, pwd, nonceCli>), Fr(~nonceServer)]
-        --[ ServerAcceptedLogin(client), ServerKeyEstablished(client, SharedKey(seed, pwd, nonceCli, ~nonceServer)) ]->
-        [ StServerLogin(client, SharedKey(seed, pwd, nonceCli, ~nonceServer)), !AllServerKeys(client, dfk), Out(<client, nonceCli, OpaqueLoginResponse(client, pwd, nonceCli, ~nonceServer), ~nonceServer>) ]
+        [ !ServerSeed(seed), !Registered(client, verifier), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<clent, OpaqueLoginRequest(client, verifier, nonceCli), nonceCli>), Fr(~nonceServer)]
+        --[ ServerAcceptedLogin(client), ServerKeyEstablished(client, SharedKey(verifier, nonceCli, ~nonceServer)) ]->
+        [ StServerLogin(client, SharedKey(verifier, nonceCli, ~nonceServer)), !AllServerKeys(client, dfk), Out(<client, nonceCli, OpaqueLoginResponse(client, verifier, nonceCli, ~nonceServer), ~nonceServer>) ]
 
     rule ClientFinishLogin:
-        [ StClientLogin(client, pwd, seed, nonceCli), !AllServerKeys(client, dfk), In(<client, nonceCli, OpaqueLoginResponse(client, pwd, nonceCli, nonceServer), nonceServer>) ]
-        --[ ClientKeyEstablished(client, SharedKey(seed, pwd, nonceCli, nonceServer)), Secret(SharedKey(seed, pwd, nonceCli, nonceServer)) ]->
-        [ StClientKey(client, SharedKey(seed, pwd, nonceCli, nonceServer)), !StClientHasDfk(client, dfk)]
+        [ StClientLogin(client, verifier, nonceCli), !AllServerKeys(client, dfk), In(<client, nonceCli, OpaqueLoginResponse(client, verifier, nonceCli, nonceServer), nonceServer>) ]
+        --[ ClientKeyEstablished(client, SharedKey(verifier, nonceCli, nonceServer)), Secret(SharedKey(verifier, nonceCli, nonceServer)) ]->
+        [ StClientKey(client, SharedKey(verifier, nonceCli, nonceServer)), !StClientHasDfk(client, dfk)]
 
     lemma ServerAcceptImpliesClientLoginStart:
     "All client k #i.
@@ -59,6 +66,23 @@ begin
     "All k #i.
         Secret(k) @ i
         ==> not (Ex #j. K(k) @ j)"
+    
+    lemma OnlyClientKnowsPassword:
+    "All client pwd #i.
+        PasswordCreated(client, pwd) @ i
+        ==> Ex #j. ClientKnowsPassword(client, pwd) @ j
+        & not (Ex #k. ServerKnowsPassword(client, pwd) @ k)
+        & not (Ex #m. K(pwd) @ m)"
+
+    lemma PasswordSecrecy:
+    "All client pwd #i.
+        PasswordCreated(client, pwd) @ i
+        ==> not (Ex #j. K(pwd) @ j)"
+    
+    lemma ServerNeverLearnsPassword:
+    "All client pwd #i.
+        PasswordCreated(client, pwd) @ i
+        ==> not (Ex #j. ServerKnowsPassword(client, pwd) @ j)"
 
 
     section{* BlindFetch *}
@@ -72,10 +96,6 @@ begin
         OprfFinalize/2,
         OprfValue/2,
         FwHashProps/2,
-        ManifestEntry/4,
-        Manifest/2,
-        AEADSize/3,
-        AEADBlock/6,
         FileKey/3,
         SizeKey/3,
         AAD/3
