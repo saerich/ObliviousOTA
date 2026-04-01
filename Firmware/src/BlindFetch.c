@@ -179,9 +179,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(remaining <= 0)
         {
             //expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
+#ifndef EarlyClose
             int discarded = 0;
             esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
             ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
+#endif
             //Read and Discard remaining blocks in present stream:
             // if((expectedBlocks - i) > 0) { ResponseDiscard(c, (expectedBlocks - i) * 1052); }
             //if not in the last block:

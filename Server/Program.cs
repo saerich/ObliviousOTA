@@ -8,6 +8,11 @@ b.WebHost.ConfigureKestrel(x =>
 {
     x.Limits.MinRequestBodyDataRate = null;
     x.Limits.KeepAliveTimeout = TimeSpan.FromHours(1); //Server is miles away atm, this should be lower.
+    //Remove this if running behind reverse proxy / TLS offloading, or provide certificate here.
+    x.ListenAnyIP(5000, listen =>
+    {
+        listen.UseHttps("./esp.pfx", "tlspwd");
+    });
 });
 
 var app = b.Build();
@@ -24,9 +29,9 @@ cleanup();
 app.Lifetime.ApplicationStopping.Register(cleanup);
 
 Directory.CreateDirectory("Logs");
-if(!File.Exists("Logs/Executions.log"))
+if(!File.Exists("Logs/Executions.csv"))
 {
-    File.WriteAllText("Logs/Executions.log", "Start Time,TTFB,TTLB,Aborted?,Aborted at\n");
+    File.WriteAllText("Logs/Executions.csv", "Start Time,TTFB,TTLB,Blocks Served,SlotOrder,Aborted?,Aborted at\n");
 }
 
 byte[] seed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
@@ -91,9 +96,10 @@ app.MapPost("/Download", async ctx =>
 {
     DateTime startTime = DateTime.UtcNow;
     DateTime? aborted = null;
+    int blocksServed = 0;
     using var reg = ctx.RequestAborted.Register(() =>
     {
-        aborted = DateTime.UtcNow;
+        aborted = DateTime.UtcNow;    
         Console.WriteLine("Client terminated early.");    
     });
     
@@ -140,12 +146,14 @@ app.MapPost("/Download", async ctx =>
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
     headerMs.Write(beta2);
-
+    
+    #if !UNORDERED
     for (int i = (int)firmwareCount - 1; i > 0; i--)
     {
         int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
         (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
     }
+    #endif
 
     headerMs.Write(BitConverter.GetBytes((int)firmwareCount));
     
@@ -190,7 +198,7 @@ app.MapPost("/Download", async ctx =>
 
             await ctx.Response.Body.WriteAsync(encryptedFirmware.Value.Nonce);
             await ctx.Response.Body.WriteAsync(encryptedFirmware.Value.Ciphertext);
-
+            if(aborted == null) { blocksServed++; }
             remaining -= plainText.Length;
         }
         
@@ -199,6 +207,6 @@ app.MapPost("/Download", async ctx =>
     await ctx.Response.Body.FlushAsync();
     DateTime ttlb = DateTime.UtcNow;
     Console.WriteLine("Downloaded some firmware.");
-    File.AppendAllText($"Logs/Executions.log", $"{startTime},{ttfb - startTime},{ttlb - startTime},{aborted != null},{(aborted == null ? "" : aborted - startTime)}\n");
+    File.AppendAllText($"Logs/Executions.csv", $"{startTime},{ttfb - startTime},{ttlb - startTime},{blocksServed},[{string.Join("|", allFirmwareKeys.Select(x => $"{x.Replace("Keys/", "").Replace(".k", "")}" ))}],{aborted != null},{(aborted == null ? "" : aborted - startTime)}\n");
 });
 app.Run();
