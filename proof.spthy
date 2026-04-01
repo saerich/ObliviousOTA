@@ -15,7 +15,6 @@ begin
     //builtins:
 
     functions:
-        ServerKnowsPassword/2,
         SharedKey/3,
         OpaqueBlindedPassword/2,
         OpaqueLoginRequest/3 [private],
@@ -43,7 +42,7 @@ begin
         [ StClientLogin(client, verifier, ~nonceCli), Out(<client, OpaqueLoginRequest(client, pwd, ~nonceCli), ~nonceCli>) ]
 
     rule ServerLoginResponse:
-        [ !ServerSeed(seed), !Registered(client, verifier), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<clent, OpaqueLoginRequest(client, verifier, nonceCli), nonceCli>), Fr(~nonceServer)]
+        [ !ServerSeed(seed), !Registered(client, verifier), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<client, OpaqueLoginRequest(client, verifier, nonceCli), nonceCli>), Fr(~nonceServer)]
         --[ ServerAcceptedLogin(client), ServerKeyEstablished(client, SharedKey(verifier, nonceCli, ~nonceServer)) ]->
         [ StServerLogin(client, SharedKey(verifier, nonceCli, ~nonceServer)), !AllServerKeys(client, dfk), Out(<client, nonceCli, OpaqueLoginResponse(client, verifier, nonceCli, ~nonceServer), ~nonceServer>) ]
 
@@ -118,7 +117,7 @@ begin
         rwdu2 = OprfValue(fwHash, seed)
     in
         [ StServerLogin(client, sk), !AllServerKeys(client, dfk), !ServerSeed(seed), In(<client, alpha1, alpha2>) ]
-        --[ SeedUsed(seed), AlphaObserved(alpha1), AlphaObserved(alpha2), BlindFetchHeadersSent(client, beta1, beta2) ]->
+        --[ SeedUsed(seed), SharedKeyUsed(sk), AlphaObserved(alpha1), AlphaObserved(alpha2), BlindFetchHeadersSent(client, beta1, beta2) ]->
         [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllServerKeys(client, dfk), Out(<beta1, beta2>) ]
 
     rule ClientReceiveHeader:
@@ -130,7 +129,7 @@ begin
         rwdu2 = OprfFinalize(fwHash, n2)
     in
         [ StBlindFetchWait(client, sk, dfk, r1, r2, alpha1, alpha2), In(<beta1, beta2>) ]
-        --[ HeaderAccepted(client, beta1, beta2), FileSecretReleased(client, dfk, rwdu1), SizeSecretReleased(client, fwHash, rwdu2) ]->
+        --[ SharedKeyUsed(sk), HeaderAccepted(client, beta1, beta2), FileSecretReleased(client, dfk, rwdu1), SizeSecretReleased(client, fwHash, rwdu2) ]->
         [ StHeaderAccepted(client, sk, dfk, fwHash, beta1, beta2, rwdu1, rwdu2) ]
 
     rule ServerSendManifest:
@@ -140,7 +139,7 @@ begin
         encSize = senc(actualSize, sizeKey)
     in
         [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block) ]
-        --[ ]->
+        --[ SharedKeyUsed(sk), ServerSentManifest(client, slotNumber, sizeNonce, encSize) ]->
         [ StManifestSent(client, sk, dfk, rwdu1), Out(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
 
     rule ClientReceiveManifest:
@@ -150,7 +149,7 @@ begin
         actualSize = sdec(encSize, sizeKey)
     in
         [ StHeaderAccepted(client, sk, dfk, expectedFwHash, beta1, beta2, rwdu1, rwdu2), In(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
-        --[ ManifestAccepted(client, slotNumber, expectedFwHash, sizeNonce, actualSize) ]->
+        --[ SharedKeyUsed(sk), ManifestAccepted(client, slotNumber, expectedFwHash, sizeNonce, actualSize) ]->
         [ StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize) ]
 
     rule ServerSendChunks:
@@ -159,7 +158,7 @@ begin
         encBlock = senc(block, fileKey)
     in
         [ StManifestSent(client, sk, dfk, rwdu1), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block)]
-        --[ ChunkSent(client, blockIndex) ]->
+        --[ SharedKeyUsed(sk), ChunkSent(client, blockNonce, encBlock) ]->
         [ Out(<blockNonce, encBlock>) ]
 
     rule ClientReceiveChunks:
@@ -168,7 +167,7 @@ begin
         block = sdec(encBlock, fileKey)
     in
         [StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize), In(<blockNonce, encBlock>) ]
-        --[  ]->
+        --[ ChunkAccepted(client, blockNonce, encBlock), SharedKeyUsed(sk) ]->
         [] //Process finished, device restarts, nothing emitted.
 
 
@@ -191,15 +190,25 @@ begin
     "All client fwHash rwdu2 #i.
         SizeSecretReleased(client, fwHash, rwdu2) @ i
         ==> not (Ex #j. K(rwdu2) @ j)"
-    // lemma BlindFetchRequestSources [sources]:
-    // "All client alpha1 alpha2 #i.
-    //     In(<client, alpha1, alpha2>) @ i
-    //     ==>
-    //     (Ex #j. KU(<client, alpha1, alpha2>) @ j & j < i) | (Ex #j. ClientBlindRequest(client, alpha1, alpha2) @ j & j < i)"
+    
+    lemma SharedKeyNotLeakedDuringBlindFetch:
+    "All sk #i.
+        SharedKeyUsed(sk) @ i
+        ==> not (Ex #j. K(sk) @ j)"
 
+    lemma LoginRequiredToDownload:
+    "All client alpha1 alpha2 #i.
+        ClientBlindRequest(client, alpha1, alpha2) @ i
+        ==> Ex sk #j. ClientKeyEstablished(client, sk) @ j & j < i"
+    
+    lemma ManifestAcceptedImpliesManifestSent:
+    "All client slotNumber fwHash sizeNonce actualSize #i.
+        ManifestAccepted(client, slotNumber, fwHash, sizeNonce, actualSize) @ i
+        ==> Ex encSize #j. ServerSentManifest(client, slotNumber, sizeNonce, encSize) @ j & j < i"
+
+    lemma ChunkAcceptedImpliesChunkSent:
+    "All client blockNonce block #i.
+        ChunkAccepted(client, blockNonce, block) @ i
+        ==> Ex blockNonce encBlock #j. ChunkSent(client, blockNonce, encBlock) @ j & j < i"
+    
 end
-
-///AAD = slotNumber| blockNumber | rwdU (where RWDU = hash of deviceKey, after being voprf hash_to_group'd)
-//firmwareFileKey = h(rwdU, deviceKey, sk)
-//nonceKey = trunc96(h(nonce, rwdU, blockNumber))
-//firmwareSizeKey = h(rwdU | slotHash | sk) (nonce is random value and sent alongside)
