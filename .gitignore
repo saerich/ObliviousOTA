@@ -425,3 +425,5 @@ opaqueseed
 *.olsk
 *.k
 *.bin
+*.key
+*.crt
