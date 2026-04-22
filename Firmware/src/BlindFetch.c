@@ -11,6 +11,86 @@
 #include "../../Interop/Interop.h"
 #include <esp_http_client.h>
 
+#ifdef PlainOTA
+#include <esp_https_ota.h>
+#include <esp_timer.h>
+#endif
+
+#ifdef PlainOTA
+uint64_t PlainOTADownload(const char* downloadURL)
+{
+    char url[256];
+    snprintf(url, sizeof(url), "%s%s", downloadURL, "/PlainOTA");
+
+    esp_http_client_config_t config = 
+    {
+        .url = url,
+        .method = HTTP_METHOD_POST,
+        .cert_pem = (char *)pemStart,
+    };
+    esp_https_ota_config_t ota_config = 
+    {
+        .http_config = &config,
+    };
+    esp_err_t ret = esp_https_ota(&ota_config);
+    if (ret == ESP_OK) 
+    {
+        uint64_t endTime = esp_timer_get_time();
+        const esp_partition_t *after = esp_ota_get_boot_partition();
+        const esp_partition_t *running = esp_ota_get_running_partition();
+        esp_ota_set_boot_partition(running);
+        esp_partition_erase_range(after, 0, after->size);
+        return endTime;
+    } 
+    return ESP_FAIL;
+}
+#endif
+
+void OTAHeaderGeneration(const char* downloadServerURL, const char* deviceFirmwareKey, const char* username, const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES])
+{
+    uint8_t deviceKey[crypto_core_ristretto255_BYTES];
+    URLDecodeHexString(deviceFirmwareKey, deviceKey);
+
+    //Okay, first off, we need to create an identifier for the specific file; we know the firmware key, and the server knows ALL the firmware keys.
+    uint8_t fwHash[crypto_hash_sha512_BYTES];
+    CreateKeyFromSKUKey(skClient, deviceKey, fwHash);
+
+    uint8_t r[32];
+    uint8_t r2[32];
+    uint8_t alpha[32];
+    uint8_t alpha2[32];
+
+    oprf_Blind((const uint8_t*)deviceKey, crypto_core_ristretto255_BYTES, r, alpha); //Still not providing deviceFirmwareKey to the server
+    oprf_Blind((const uint8_t*)fwHash, crypto_hash_sha512_BYTES, r2, alpha2);
+    
+    size_t bodyLen = sizeof(alpha) + sizeof(alpha2) + sizeof(uint32_t) + strlen(username);
+    uint8_t* body = malloc(bodyLen);
+    if(!body)
+    { 
+        ESP_LOGE("HTTP", "Could not allocate body");
+        return; 
+    }
+    uint8_t* p = body;
+    
+    memcpy(p, alpha, sizeof(alpha));
+    p += sizeof(alpha);
+
+    memcpy(p, alpha2, sizeof(alpha2));
+    p += sizeof(alpha2);
+    
+    uint32_t unameLen = strlen(username);
+    memcpy(p, &unameLen, sizeof(unameLen));
+    p += sizeof(unameLen);
+    
+    memcpy(p, username, strlen(username));
+
+    int statusCode = 0;
+    esp_http_client_handle_t c;
+    ESP_ERROR_CHECK(TLSPost(downloadServerURL, "/GenerateHeaders", body, bodyLen, &c, &statusCode));
+    HttpFree(&c);
+
+    free(body);
+}
 
 void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirmwareKey, const char* username, const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES])
 {
@@ -183,12 +263,9 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             int discarded = 0;
             esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
             ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
+#else
+            HttpFree(&c);
 #endif
-            //Read and Discard remaining blocks in present stream:
-            // if((expectedBlocks - i) > 0) { ResponseDiscard(c, (expectedBlocks - i) * 1052); }
-            //if not in the last block:
-            // if(numberSKUs - slotNumber > 0) { ResponseDiscard(c, ((numberSKUs - slotNumber) * expectedBlocks) * 1052); } //Read and discard all blocks remaining on stream.
-
             //Send R, Alpha, Beta, N, RWDU to server, only if KTVs are enabled.
             #ifdef SEND_KTVS
                 char* url = malloc(2048);

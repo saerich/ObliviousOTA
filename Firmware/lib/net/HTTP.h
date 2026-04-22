@@ -12,6 +12,8 @@ typedef struct
     int bufSize;
 } HTTPBufferContext_t;
 
+extern const char pemStart[] asm("_binary_esp_crt_start");
+
 cJSON* HTTPGetJSON(const char* url, int* statusCode);
 void HTTPGet(const char* url, int* statusCode);
 void URLEncodeByteArray(const uint8_t* data, size_t len, char* out, size_t outSize);

@@ -54,7 +54,8 @@ cJSON* HTTPGetJSON(const char* url, int* statusCode)
         .method = HTTP_METHOD_GET,
         .event_handler = onHttpReceive,
         .user_data = &ctx,
-        .crt_bundle_attach = esp_crt_bundle_attach
+        .cert_pem = pemStart,
+        //.crt_bundle_attach = esp_crt_bundle_attach
     };
 
     esp_http_client_handle_t cli = esp_http_client_init(&config);
@@ -126,7 +127,8 @@ void HTTPGet(const char* url, int* statusCode)
         .method = HTTP_METHOD_GET,
         .event_handler = onHttpReceive,
         .user_data = &ctx,
-        .crt_bundle_attach = esp_crt_bundle_attach,
+        .cert_pem = pemStart,
+        //.crt_bundle_attach = esp_crt_bundle_attach,
         .buffer_size_tx = 4096
     };
 
@@ -192,9 +194,10 @@ esp_err_t TLSPost(const char* baseURL, const char* path, const uint8_t* postBody
         .url = url,
         .method = HTTP_METHOD_POST,
         .timeout_ms = 3600000,
-        .buffer_size = 1024,
+        .buffer_size = 16384,
         .buffer_size_tx = 1024,
-        .crt_bundle_attach = esp_crt_bundle_attach,
+        .cert_pem = pemStart
+        //.crt_bundle_attach = esp_crt_bundle_attach,
     };
 
     *client = esp_http_client_init(&cfg);
@@ -287,8 +290,10 @@ void HttpDrainAndFree(esp_http_client_handle_t* client)
 {
     if(*client)
     {
+#ifndef EarlyClose
         int discarded = 0;
         esp_http_client_flush_response(*client, &discarded);
+#endif
         HttpFree(client);
     }
 }

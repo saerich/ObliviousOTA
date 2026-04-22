@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Components.Web;
 using ObliviousOTA.Interop;
 using ObliviousOTA.Models.Request;
 
@@ -8,10 +9,10 @@ b.WebHost.ConfigureKestrel(x =>
 {
     x.Limits.MinRequestBodyDataRate = null;
     x.Limits.KeepAliveTimeout = TimeSpan.FromHours(1); //Server is miles away atm, this should be lower.
-    //Remove this if running behind reverse proxy / TLS offloading, or provide certificate here.
     x.ListenAnyIP(5000, listen =>
     {
-        listen.UseHttps("./esp.pfx", "tlspwd");
+        //Remove this if running behind reverse proxy / TLS offloading, or provide certificate here.
+        listen.UseHttps("./esp.pfx", Environment.GetEnvironmentVariable("BLIND_FETCH_TLS_PASSWORD"));
     });
 });
 
@@ -87,10 +88,126 @@ app.MapGet("/KTV", async([AsParameters] KTVRequest req) =>
     File.AppendAllText("Logs/KTV.csv", $"{DateTime.UtcNow},{req.Username},{req.Alpha1},{req.Alpha2},{req.Beta1},{req.Beta2},{req.N1},{req.N2},{req.RWDU1},{req.RWDU2},{req.FWHash},{req.DeviceKey},{req.RealBlocks},{req.AbsorbedBlocks},{req.SK}\n");
 });
 
-app.MapGet("/ClientLog", async([AsParameters] LogRequest req) =>
+app.MapPost("/PlainOTA", async ctx =>
 {
+    if(!File.Exists("PlainExecutions.csv"))
+    {
+        File.WriteAllText("PlainExecutions.csv", "Date,TTFB,TTLB,Bytes\n");
+    }
+    DateTime start = DateTime.UtcNow;
+    ctx.Response.ContentType = "application/octet-stream";
+    ctx.Response.StatusCode = 200;
+    using FileStream fs = new("PlainFirmware/firmware.bin", FileMode.Open, FileAccess.Read, FileShare.Read);
+    ctx.Response.ContentLength = fs.Length;
+    DateTime ttfb = DateTime.UtcNow;
+    await fs.CopyToAsync(ctx.Response.Body);
+    await ctx.Response.Body.FlushAsync();
     
+    ctx.Response.OnCompleted(() =>
+    {
+        File.AppendAllLines("PlainExecutions.csv", [$"{start},{ttfb},{DateTime.UtcNow - start},{ctx.Response.ContentLength}"]);
+        return Task.CompletedTask;
+    });
 });
+
+app.MapPost("/GenerateHeaders", async ctx =>
+{
+    byte[] alpha1 = new byte[32];
+    byte[] alpha2 = new byte[32];
+    byte[] unameLen = new byte[4];
+
+    await ctx.Request.Body.ReadExactlyAsync(alpha1);
+    await ctx.Request.Body.ReadExactlyAsync(alpha2);
+    await ctx.Request.Body.ReadExactlyAsync(unameLen);
+
+    byte[] unameBuf = new byte[BitConverter.ToInt32(unameLen)];
+    await ctx.Request.Body.ReadExactlyAsync(unameBuf);
+
+
+    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
+    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
+    byte[]? userKey = null;
+    string username = Encoding.UTF8.GetString(unameBuf);
+
+    try
+    {
+        userKey = File.ReadAllBytes($"{username}.osk");
+        File.Delete($"{username}.osk");
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine(ex);
+        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;        
+    }
+
+    string[] allFirmwareKeys = Directory.GetFiles("Keys");
+    long firmwareCount = allFirmwareKeys.Length;
+
+    ctx.Response.ContentType = "application/octet-stream";
+    ctx.Response.StatusCode = 200;
+    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); 
+
+    using MemoryStream headerMs = new();
+    headerMs.Write(beta1);
+    headerMs.Write(beta2);
+    
+    #if !ORDERED
+    for (int i = (int)firmwareCount - 1; i > 0; i--)
+    {
+        int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
+        (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
+    }
+    #endif
+
+    headerMs.Write(BitConverter.GetBytes((int)firmwareCount));
+    IEnumerable<string> keyBlock = [];
+    
+    foreach(var key in allFirmwareKeys) 
+    {
+        byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
+        headerMs.Write(fwHash ?? new byte[64]);
+        long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, seed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
+        if(len == null) 
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 
+            return; 
+        }
+        headerMs.Write(len.Value.Nonce);
+        headerMs.Write(len.Value.Ciphertext);
+        keyBlock = keyBlock.Append($"[{Convert.ToHexString(fwHash)}|{actualFileSize}|{Convert.ToHexString(len.Value.Nonce)}|{Convert.ToHexString(len.Value.Ciphertext)}]");
+    }
+    byte[] header = headerMs.ToArray();
+    await ctx.Response.Body.WriteAsync(header);
+    await File.AppendAllTextAsync("Header.csv", $"{DateTime.UtcNow},{Convert.ToHexString(beta1)},{Convert.ToHexString(beta2)},{ctx.Response.ContentLength},{firmwareCount},{string.Join("||", keyBlock)}\n");
+});
+
+app.MapGet("/GeneratePlainMetadata", async ctx =>
+{
+    for(int lp = 0; lp < 100; lp++)
+    {
+        string[] allFirmwareKeys = Directory.GetFiles("Keys");
+        long firmwareCount = allFirmwareKeys.Length;
+        #if !ORDERED
+        for (int i = (int)firmwareCount - 1; i > 0; i--)
+        {
+            int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
+            (allFirmwareKeys[i], allFirmwareKeys[j]) = (allFirmwareKeys[j], allFirmwareKeys[i]);
+        }
+        #endif
+        
+        IEnumerable<string> keyBlock = [];
+        foreach(var key in allFirmwareKeys) 
+        {
+            long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
+            keyBlock = keyBlock.Append($"[{key}||{actualFileSize}]");
+        }
+        await File.AppendAllTextAsync("PlainHeader.csv", $"{DateTime.UtcNow},{ctx.Response.ContentLength},{firmwareCount},{string.Join("||", keyBlock)}\n");
+    }
+    ctx.Response.StatusCode = 200;
+});
+
 
 app.MapPost("/Download", async ctx =>
 {
@@ -113,14 +230,12 @@ app.MapPost("/Download", async ctx =>
 
     byte[] unameBuf = new byte[BitConverter.ToInt32(unameLen)];
     await ctx.Request.Body.ReadExactlyAsync(unameBuf);
-    
 
     byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
     byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
     byte[]? userKey = null;
 
 
-    //using StreamReader reader = new(ctx.Request.Body, System.Text.Encoding.UTF8);
     string username = Encoding.UTF8.GetString(unameBuf);
     
     try
@@ -140,14 +255,14 @@ app.MapPost("/Download", async ctx =>
 
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
-    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 72L = beta 1, 2 and number of firmware.
+    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 68L = beta 1, 2 and number of firmware.
     
     // ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
     headerMs.Write(beta2);
     
-    #if !UNORDERED
+    #if !ORDERED
     for (int i = (int)firmwareCount - 1; i > 0; i--)
     {
         int j = System.Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1);
