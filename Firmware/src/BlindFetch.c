@@ -271,15 +271,14 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         remaining -= effectiveLength;
         if(remaining <= 0)
         {
-            //expectedBlocks -= (i + 1); //We've already read 1 block, this is an off-by-1 without;
-#ifndef EarlyClose
-            int discarded = 0;
-            esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
-            ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
-            HttpFree(&c);
-#else
-            HttpFree(&c);
-#endif
+            #ifndef EarlyClose
+                int discarded = 0;
+                esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
+                ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
+                HttpFree(&c);
+            #else
+                HttpFree(&c);
+            #endif
             //Send R, Alpha, Beta, N, RWDU to server, only if KTVs are enabled.
             #ifdef SEND_KTVS
                 char* url = malloc(2048);
