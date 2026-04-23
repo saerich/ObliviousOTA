@@ -18,8 +18,8 @@ def get_avg(filename):
     return sum(deltas_sec) / len(deltas_sec)
 
 # Compute both averages
-avg_plain = get_avg("FixedPlainExecutions.csv")
-avg_blind = get_avg("OTABlindFetch.csv")
+avg_plain = get_avg("Data/PlainTiming.csv")
+avg_blind = get_avg("Data/BlindFetchTiming.csv")
 
 print("Plain Average:", avg_plain, "seconds")
 print("Blind Average:", avg_blind, "seconds")
