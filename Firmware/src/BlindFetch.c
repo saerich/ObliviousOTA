@@ -147,6 +147,8 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     if(oprf_Unblind(r, beta, N) != 0)
     {
         ESP_LOGE("OPRF", "Could not calculate N");
+        HttpDrainAndFree(&c);
+        return;
     }
     
     if(oprf_Finalize(deviceKey, crypto_core_ristretto255_BYTES, N, rwdU) != 0) 
@@ -157,8 +159,18 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     }
     
     ResponseReadUpTo(c, beta2, 32);
-    oprf_Unblind(r2, beta2, N2);
-    oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N2, rwdU2);
+    if(oprf_Unblind(r2, beta2, N2) != 0)
+    {
+        ESP_LOGE("OPRF", "Could not calculate N2");
+        HttpDrainAndFree(&c);
+        return;
+    }
+    if(oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N2, rwdU2) != 0)
+    {
+        ESP_LOGE("COuld not finalize N2");
+        HttpDrainAndFree(&c);
+        return;
+    }
 
     uint8_t numberOfSKUs[4];
     ResponseReadUpTo(c, numberOfSKUs, sizeof(numberOfSKUs));
@@ -247,9 +259,10 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         if(crypto_aead_chacha20poly1305_ietf_decrypt(raw, &rawLen, NULL, cipherText, sizeof(cipherText), aad, sizeof(aad), nonceKey, aeadKey) != 0)
         {
             ESP_LOGE("DECRYPT", "Decryption failed, for some reason.");
-            HttpFree(&c);
+            HttpDrainAndFree(&c);
+            esp_partition_erase_range(nextPartition, 0, nextPartition->size);
+            esp_ota_end(otaHandle);
             return;
-            ESP_ERROR_CHECK(ESP_ERR_INVALID_RESPONSE);
         }
 
         size_t effectiveLength = (remaining < sizeof(raw) ? (size_t)remaining : sizeof(raw));
@@ -263,6 +276,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             int discarded = 0;
             esp_http_client_flush_response(c, &discarded); //No point in manually flushing, this does it for us.
             ESP_LOGI("HTTP", "Discarded %d bytes", discarded);
+            HttpFree(&c);
 #else
             HttpFree(&c);
 #endif
@@ -307,10 +321,8 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
             {
                 esp_partition_erase_range(nextPartition, 0, nextPartition->size);
                 esp_ota_end(otaHandle);
-                HttpFree(&c);
                 return;
             }
-            HttpFree(&c);
             esp_ota_end(otaHandle);
             esp_ota_set_boot_partition(nextPartition);
             esp_restart();
