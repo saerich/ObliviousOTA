@@ -15,24 +15,33 @@ functions:
   idx0/0
 
 equations:
+  /* OPRF correctness */
   unblind(r, eval(blind(x,r), k)) = prf(k,x),
+
+  /* AEAD correctness */
   aead_dec(aead(m,k,n,a), k, n, a) = m
 
 
 /* ===================== SETUP ===================== */
 
-rule InitServer:
+/* Independent OPRF secrets (NOT the OPAQUE seed) */
+rule InitServerOPRFSecrets:
   [ Fr(~kP), Fr(~kS) ]
   -->
-  [ !SrvKeys(~kP, ~kS) ]
+  [ !OPRF_Payload_Secret(~kP),
+    !OPRF_Size_Secret(~kS) ]
 
+/* SKU universe */
 rule InitSKUs:
   [ Fr(~dfk0), Fr(~dfk1) ]
   -->
-  [ !ClientSKU(~dfk0), !OtherSKU(~dfk1) ]
+  [ !ClientSKU(~dfk0),
+    !OtherSKU(~dfk1) ]
 
 
 /* ===================== ABSTRACT OPAQUE ===================== */
+/* OPAQUE produces a session key sk.
+   It does NOT share secrets with OPRF. */
 
 rule OPAQUE_Login:
   [ !ClientSKU(dfk0), Fr(~sk) ]
@@ -57,14 +66,16 @@ rule Client_SendAlphas:
     Out(<a1, a2>) ]
 
 rule Server_SendBetas:
-  [ !SrvKeys(kP,kS), In(<a1,a2>) ]
+  [ !OPRF_Payload_Secret(kP),
+    !OPRF_Size_Secret(kS),
+    In(<a1,a2>) ]
   -->
   [ Out(<eval(a1,kP), eval(a2,kS)>) ]
 
 rule Client_DeriveKeys:
   let
-    sP    = unblind(r1,b1)
-    sS    = unblind(r2,b2)
+    sP    = unblind(r1,b1)      /* payload OPRF output */
+    sS    = unblind(r2,b2)      /* size OPRF output */
     Kpay  = kdf(sk, sP, tag_payload)
     Ksize = kdf(sk, sS, tag_size)
   in
@@ -81,58 +92,64 @@ rule Client_DeriveKeys:
 
 rule Server_SendDesc_Slot0:
   let
-    sid0 = slotid(dfk0)
-    Ksize0 = kdf(sk, prf(kS, sid0), tag_size)
+    sid0   = slotid(dfk0)
+    sS0    = prf(kS, sid0)
+    Ksize0 = kdf(sk, sS0, tag_size)
     csize0 = aead(~size0, Ksize0, ~n0, aad_size(sid0))
   in
-  [ !SrvKeys(kP,kS), Sess(dfk0,sk), Fr(~size0), Fr(~n0) ]
+  [ !OPRF_Size_Secret(kS),
+    Sess(dfk0,sk),
+    Fr(~size0), Fr(~n0) ]
   -->
   [ Out(<sid0, ~n0, csize0>) ]
 
 rule Server_SendDesc_Slot1:
   let
-    sid1 = slotid(dfk1)
-    Ksize1 = kdf(sk, prf(kS, sid1), tag_size)
+    sid1   = slotid(dfk1)
+    sS1    = prf(kS, sid1)
+    Ksize1 = kdf(sk, sS1, tag_size)
     csize1 = aead(~size1, Ksize1, ~n1, aad_size(sid1))
   in
-  [ !SrvKeys(kP,kS), Sess(dfk0,sk), !OtherSKU(dfk1), Fr(~size1), Fr(~n1) ]
+  [ !OPRF_Size_Secret(kS),
+    Sess(dfk0,sk),
+    !OtherSKU(dfk1),
+    Fr(~size1), Fr(~n1) ]
   -->
   [ Out(<sid1, ~n1, csize1>) ]
 
-/* -------- FORCED DECRYPTION (SIZE) -------- */
-
 rule Client_AcceptSize:
   let
-    plaintext = aead_dec(csize, Ksize, n, aad_size(sid))
+    size = aead_dec(csize, Ksize, n, aad_size(sid))
   in
-  [ !Keys(dfk0, sk, Kpay, Ksize), In(<sid, n, csize>) ]
+  [ !Keys(dfk0, sk, Kpay, Ksize),
+    In(<sid, n, csize>) ]
   -->
-  [ AcceptedSizeOK(dfk0, sid, plaintext),
-    ClientAcceptedSize(dfk0, sid) ]
+  [ ClientAcceptedSize(dfk0, sid) ]
 
 
 /* ===================== PAYLOAD ===================== */
 
 rule Server_SendBlock:
   let
-    sid0 = slotid(dfk0)
-    Kpay0 = kdf(sk, prf(kP, dfk0), tag_payload)
-    cblk = aead(~blk0, Kpay0, ~nB, aad_blk(sid0, idx0))
+    sid0   = slotid(dfk0)
+    sP0    = prf(kP, dfk0)
+    Kpay0  = kdf(sk, sP0, tag_payload)
+    cblk   = aead(~blk0, Kpay0, ~nB, aad_blk(sid0, idx0))
   in
-  [ !SrvKeys(kP,kS), Sess(dfk0,sk), Fr(~blk0), Fr(~nB) ]
+  [ !OPRF_Payload_Secret(kP),
+    Sess(dfk0,sk),
+    Fr(~blk0), Fr(~nB) ]
   -->
   [ Out(<sid0, idx0, ~nB, cblk>) ]
 
-/* -------- FORCED DECRYPTION (BLOCK) -------- */
-
 rule Client_AcceptBlock:
   let
-    plaintext = aead_dec(cblk, Kpay, n, aad_blk(sid, idx0))
+    blk = aead_dec(cblk, Kpay, n, aad_blk(sid, idx0))
   in
-  [ !Keys(dfk0, sk, Kpay, Ksize), In(<sid, idx0, n, cblk>) ]
+  [ !Keys(dfk0, sk, Kpay, Ksize),
+    In(<sid, idx0, n, cblk>) ]
   -->
-  [ AcceptedBlockOK(dfk0, sid, idx0, plaintext),
-    ClientAcceptedBlock(dfk0, sid, idx0) ]
+  [ ClientAcceptedBlock(dfk0, sid, idx0) ]
 
 
 /* ===================== LEMMAS ===================== */
