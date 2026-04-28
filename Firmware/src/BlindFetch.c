@@ -167,7 +167,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     }
     if(oprf_Finalize(fwHash, crypto_hash_sha512_BYTES, N2, rwdU2) != 0)
     {
-        ESP_LOGE("COuld not finalize N2");
+        ESP_LOGE("OPRF", "Could not finalize N2");
         HttpDrainAndFree(&c);
         return;
     }
@@ -182,28 +182,19 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
     uint64_t actualSize = 0;
     for(int i = 0; i < numberSKUs; i++)
     {
-        uint8_t foundHash[crypto_hash_sha512_BYTES];
-        ResponseReadUpTo(c, foundHash, sizeof(foundHash));
         uint8_t sizeNonce[12];
         uint8_t sizeCrypt[24];
         ResponseReadUpTo(c, sizeNonce, sizeof(sizeNonce));
         ResponseReadUpTo(c, sizeCrypt, sizeof(sizeCrypt));
 
-        if(memcmp(foundHash, fwHash, sizeof(fwHash)) == 0) 
-        { 
-            slotNumber = i; 
+        uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
+        CalculateFirmwareFileKey(rwdU2, fwHash, skClient, slotAeadKey);
+        unsigned long long sizeRawLength = 0;
+        uint8_t tmpActualSize[8];
+        if(crypto_aead_chacha20poly1305_ietf_decrypt(tmpActualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) == 0)
+        {
+            slotNumber = i;
             ESP_LOGI("Slot", "Found slot %d.", slotNumber);
-            uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-            CalculateFirmwareSizeKey(rwdU2, fwHash, skClient, slotAeadKey);
-
-            unsigned long long sizeRawLength = 0;
-            uint8_t tmpActualSize[8];
-            if(crypto_aead_chacha20poly1305_ietf_decrypt(tmpActualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) != 0)
-            {
-                ESP_LOGE("Firmware", "Could not get actual firmware size.");
-                return;
-            }
-
             actualSize = ((uint64_t)tmpActualSize[0] << 0) |
                 ((uint64_t)tmpActualSize[1] << 8) |
                 ((uint64_t)tmpActualSize[2] << 16) |
@@ -213,11 +204,11 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
                 ((uint64_t)tmpActualSize[6] << 48) |
                 ((uint64_t)tmpActualSize[7] << 56);
         }
-
     }
     if(slotNumber == -1) { ESP_ERROR_CHECK(ESP_ERR_HW_CRYPTO_BASE); }
 
     int expectedBlocks = 4096;
+
     int discardBlocks = slotNumber * expectedBlocks; //4096 = 4mb firmware image / 1024 byte block sizes.
     //Effectively we want to read and discard n bytes, in blocks, each block is 1052 bytes,  slot number * expectedBlocks * 1052 = total bytes to read and discard.
     ResponseDiscard(c, discardBlocks * 1052);
