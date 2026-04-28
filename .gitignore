@@ -428,3 +428,5 @@ opaqueseed
 *.key
 *.crt
 PlainFirmware/*
+oprfFileSeed
+oprfSizeSeed

@@ -48,18 +48,31 @@ else
     seed = File.ReadAllBytes("opaqueseed");
 }
 
-byte[] oprfSeed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
+byte[] oprfFileSeed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
-if(!File.Exists("oprfseed"))
+if(!File.Exists("oprffileseed"))
 {
-    int ret = Interop.OpaqueInit(seed);
-    if(ret == 0) { File.WriteAllBytes("oprfseed", seed); }
-    else { throw new Exception("Could not create OPRF Seed."); }
+    int ret = Interop.OpaqueInit(oprfFileSeed);
+    if(ret == 0) { File.WriteAllBytes("oprffileseed", oprfFileSeed); }
+    else { throw new Exception("Could not create OPRF File Seed."); }
 }
 else
 {
-    oprfSeed = File.ReadAllBytes("oprfseed");
+    oprfFileSeed = File.ReadAllBytes("oprfseed");
 }
+byte[] oprfSizeSeed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
+
+if(!File.Exists("oprfsizeseed"))
+{
+    int ret = Interop.OpaqueInit(oprfSizeSeed);
+    if(ret == 0) { File.WriteAllBytes("oprfsizeseed", oprfSizeSeed); }
+    else { throw new Exception("Could not create OPRF Size Seed."); }
+}
+else
+{
+    oprfSizeSeed = File.ReadAllBytes("oprfsizeseed");
+}
+
 
 app.MapGet("/Register", ([AsParameters] RegisterRequest req) =>
 {
@@ -137,8 +150,8 @@ app.MapPost("/GenerateHeaders", async ctx =>
     await ctx.Request.Body.ReadExactlyAsync(unameBuf);
 
 
-    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfSeed);
-    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSeed);
+    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfFileSeed);
+    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSizeSeed);
     byte[]? userKey = null;
     string username = Encoding.UTF8.GetString(unameBuf);
 
@@ -181,7 +194,7 @@ app.MapPost("/GenerateHeaders", async ctx =>
         byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
         headerMs.Write(fwHash ?? new byte[64]);
         long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
-        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSeed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSizeSeed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
         if(len == null) 
         {
             ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 
@@ -244,8 +257,8 @@ app.MapPost("/Download", async ctx =>
     byte[] unameBuf = new byte[BitConverter.ToInt32(unameLen)];
     await ctx.Request.Body.ReadExactlyAsync(unameBuf);
 
-    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfSeed);
-    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSeed);
+    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfFileSeed);
+    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSizeSeed);
     byte[]? userKey = null;
 
 
@@ -290,7 +303,7 @@ app.MapPost("/Download", async ctx =>
         byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
         // headerMs.Write(fwHash ?? new byte[64]);
         long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
-        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSeed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSizeSeed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
         if(len == null) 
         {
             ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 
@@ -321,7 +334,7 @@ app.MapPost("/Download", async ctx =>
 
             byte[] deviceKey = File.ReadAllBytes(x.key);
 
-            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(x.idx, block++, userKey, oprfSeed, deviceKey, plainText);
+            (byte[] Ciphertext, byte[] Nonce)? encryptedFirmware = InteropWrappers.EncryptFirmware(x.idx, block++, userKey, oprfFileSeed, deviceKey, plainText);
             if(encryptedFirmware == null) { Console.WriteLine("Null response."); break; }
 
             await ctx.Response.Body.WriteAsync(encryptedFirmware.Value.Nonce);
