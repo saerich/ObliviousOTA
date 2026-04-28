@@ -1,214 +1,160 @@
-
-/*
- *  Author: XXXXX
- *  Model Name: proof.spthy
- *  Status: DEVELOPMENTAL
- *
- *  Comments:
- */
-
 theory BlindFetch
-begin 
+begin
 
-    section{* OPAQUE *}
+/* ===================== PRIMITIVES ===================== */
 
-    //builtins:
+builtins: hashing, symmetric-encryption
 
-    functions:
-        SharedKey/3,
-        OpaqueBlindedPassword/2,
-        OpaqueLoginRequest/3 [private],
-        OpaqueLoginResponse/4 [private]
-    //equations: 
+functions:
+  blind/2, eval/2, unblind/2, prf/2,
+  kdf/3,
+  aead/4, aead_dec/4,
+  aad_size/1, aad_blk/2,
+  slotid/1,
+  tag_size/0, tag_payload/0,
+  idx0/0
 
-    rule InitServer:
-        [ Fr(~opaqueseed), Fr(~dfk), Fr(~numberSKUs), Fr(~slotNumber), Fr(~sizeNonce), Fr(~actualSize), Fr(~blockNonce), Fr(~block), Fr(~blockIndex) ]
-        --[ ServerStarted(~opaqueseed) ]->
-        [ !ServerSeed(~opaqueseed), !AllFirmwareInfo(~dfk, ~numberSKUs, ~slotNumber, ~sizeNonce, ~actualSize, ~blockNonce, ~blockIndex, ~block) ]
-
-    rule RegisterClient:
-        [ Fr(~client), Fr(~pwd), !ServerSeed(seed) ]
-        --[ ClientRegistered(~client), PasswordCreated(~client, ~pwd), ClientKnowsPassword(~client, ~pwd) ]->
-        [ !ClientRecord(~client, ~pwd), Out(<~client, OpaqueBlindedPassword(~pwd, seed)>) ]
-
-    rule ServerRegister:
-        [ In(<client, verifier>) ]
-        --[]->
-        [ !Registered(client, verifier) ]
-
-    rule ClientStartLogin:
-        [ !ClientRecord(client, pwd), !Registered(client, verifier), Fr(~nonceCli) ]
-        --[ ClientLoginStart(client) ]->
-        [ StClientLogin(client, verifier, ~nonceCli), Out(<client, OpaqueLoginRequest(client, pwd, ~nonceCli), ~nonceCli>) ]
-
-    rule ServerLoginResponse:
-        [ !ServerSeed(seed), !Registered(client, verifier), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block), In(<client, OpaqueLoginRequest(client, verifier, nonceCli), nonceCli>), Fr(~nonceServer)]
-        --[ ServerAcceptedLogin(client), ServerKeyEstablished(client, SharedKey(verifier, nonceCli, ~nonceServer)) ]->
-        [ StServerLogin(client, SharedKey(verifier, nonceCli, ~nonceServer)), !AllServerKeys(client, dfk), Out(<client, nonceCli, OpaqueLoginResponse(client, verifier, nonceCli, ~nonceServer), ~nonceServer>) ]
-
-    rule ClientFinishLogin:
-        [ StClientLogin(client, verifier, nonceCli), !AllServerKeys(client, dfk), In(<client, nonceCli, OpaqueLoginResponse(client, verifier, nonceCli, nonceServer), nonceServer>) ]
-        --[ ClientKeyEstablished(client, SharedKey(verifier, nonceCli, nonceServer)), Secret(SharedKey(verifier, nonceCli, nonceServer)) ]->
-        [ StClientKey(client, SharedKey(verifier, nonceCli, nonceServer)), !StClientHasDfk(client, dfk)]
-
-    lemma ServerAcceptImpliesClientLoginStart:
-    "All client k #i.
-        ServerKeyEstablished(client, k) @ i
-        ==> Ex #j. ClientLoginStart(client) @ j & j < i"
-
-    lemma ClientKeyImpliesServerKey:
-    "All client k #i.
-        ClientKeyEstablished(client, k) @ i
-        ==> Ex #j. ServerKeyEstablished(client, k) @ j"
-
-    lemma SharedKeySecrecy:
-    "All k #i.
-        Secret(k) @ i
-        ==> not (Ex #j. K(k) @ j)"
-    
-    lemma OnlyClientKnowsPassword:
-    "All client pwd #i.
-        PasswordCreated(client, pwd) @ i
-        ==> Ex #j. ClientKnowsPassword(client, pwd) @ j
-        & not (Ex #k. ServerKnowsPassword(client, pwd) @ k)
-        & not (Ex #m. K(pwd) @ m)"
-
-    lemma PasswordSecrecy:
-    "All client pwd #i.
-        PasswordCreated(client, pwd) @ i
-        ==> not (Ex #j. K(pwd) @ j)"
-    
-    lemma ServerNeverLearnsPassword:
-    "All client pwd #i.
-        PasswordCreated(client, pwd) @ i
-        ==> not (Ex #j. ServerKnowsPassword(client, pwd) @ j)"
+equations:
+  unblind(r, eval(blind(x,r), k)) = prf(k,x),
+  aead_dec(aead(m,k,n,a), k, n, a) = m
 
 
-    section{* BlindFetch *}
+/* ===================== SETUP ===================== */
 
-    builtins: hashing, symmetric-encryption
+rule InitServer:
+  [ Fr(~kP), Fr(~kS) ]
+  -->
+  [ !SrvKeys(~kP, ~kS) ]
 
-    functions:
-        OprfBlind/2,
-        OprfEval/2,
-        OprfUnblind/2,
-        OprfFinalize/2,
-        OprfValue/2,
-        FwHashProps/2,
-        FileKey/3,
-        SizeKey/3,
-        AAD/3
-
-    rule ClientRequestFirmware:
-    let
-        alpha1 = OprfBlind(dfk, ~r1)
-        alpha2 = OprfBlind(h(FwHashProps(sk, dfk)), ~r2)
-    in
-        [ StClientKey(client, sk), !StClientHasDfk(client, dfk), Fr(~r1), Fr(~r2) ]
-        --[ ClientLoggedOut(client), ClientBlindRequest(client, alpha1, alpha2) ]->
-        [ StBlindFetchWait(client, sk, dfk, ~r1, ~r2, alpha1, alpha2), !StClientHasDfk(client, dfk), Out(<client, alpha1, alpha2>) ]
-
-    rule ServerSendHeader:
-    let
-        fwHash = h(FwHashProps(sk, dfk))
-        beta1 = OprfEval(alpha1, seed)
-        beta2 = OprfEval(alpha2, seed)
-        rwdu1 = OprfValue(dfk, seed)
-        rwdu2 = OprfValue(fwHash, seed)
-    in
-        [ StServerLogin(client, sk), !AllServerKeys(client, dfk), !ServerSeed(seed), In(<client, alpha1, alpha2>) ]
-        --[ SeedUsed(seed), SharedKeyUsed(sk), AlphaObserved(alpha1), AlphaObserved(alpha2), BlindFetchHeadersSent(client, beta1, beta2) ]->
-        [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllServerKeys(client, dfk), Out(<beta1, beta2>) ]
-
-    rule ClientReceiveHeader:
-    let
-        fwHash = h(FwHashProps(sk, dfk))
-        n1 = OprfUnblind(r1, beta1)
-        n2 = OprfUnblind(r2, beta2)
-        rwdu1 = OprfFinalize(dfk, n1)
-        rwdu2 = OprfFinalize(fwHash, n2)
-    in
-        [ StBlindFetchWait(client, sk, dfk, r1, r2, alpha1, alpha2), In(<beta1, beta2>) ]
-        --[ SharedKeyUsed(sk), HeaderAccepted(client, beta1, beta2), FileSecretReleased(client, dfk, rwdu1), SizeSecretReleased(client, fwHash, rwdu2) ]->
-        [ StHeaderAccepted(client, sk, dfk, fwHash, beta1, beta2, rwdu1, rwdu2) ]
-
-    rule ServerSendManifest:
-    let
-        firmwareHash = h(FwHashProps(sk, dfk))
-        sizeKey = SizeKey(rwdu2, sk, firmwareHash)
-        encSize = senc(actualSize, sizeKey)
-    in
-        [ StHeaderSent(client, sk, dfk, rwdu1, rwdu2), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block) ]
-        --[ SharedKeyUsed(sk), ServerSentManifest(client, slotNumber, sizeNonce, encSize) ]->
-        [ StManifestSent(client, sk, dfk, rwdu1), Out(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
-
-    rule ClientReceiveManifest:
-    let
-        expectedFwHash = h(FwHashProps(sk, dfk))
-        sizeKey = SizeKey(rwdu2, sk, expectedFwHash)
-        actualSize = sdec(encSize, sizeKey)
-    in
-        [ StHeaderAccepted(client, sk, dfk, expectedFwHash, beta1, beta2, rwdu1, rwdu2), In(<numberSKUs, slotNumber, sizeNonce, encSize>) ]
-        --[ SharedKeyUsed(sk), ManifestAccepted(client, slotNumber, expectedFwHash, sizeNonce, actualSize) ]->
-        [ StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize) ]
-
-    rule ServerSendChunks:
-    let
-        fileKey = FileKey(rwdu1, sk, dfk)
-        encBlock = senc(block, fileKey)
-    in
-        [ StManifestSent(client, sk, dfk, rwdu1), !AllFirmwareInfo(dfk, numberSKUs, slotNumber, sizeNonce, actualSize, blockNonce, blockIndex, block)]
-        --[ SharedKeyUsed(sk), ChunkSent(client, blockNonce, encBlock) ]->
-        [ Out(<blockNonce, encBlock>) ]
-
-    rule ClientReceiveChunks:
-    let
-        fileKey = FileKey(rwdu1, sk, dfk)
-        block = sdec(encBlock, fileKey)
-    in
-        [StManifestAccepted(client, sk, dfk, rwdu1, slotNumber, actualSize), In(<blockNonce, encBlock>) ]
-        --[ ChunkAccepted(client, blockNonce, encBlock), SharedKeyUsed(sk) ]->
-        [] //Process finished, device restarts, nothing emitted.
+rule InitSKUs:
+  [ Fr(~dfk0), Fr(~dfk1) ]
+  -->
+  [ !ClientSKU(~dfk0), !OtherSKU(~dfk1) ]
 
 
-    lemma SeedIsSecret:
-    "All seed #i.
-        SeedUsed(seed) @ i
-        ==> not (Ex #j. K(seed) @ j)"
+/* ===================== ABSTRACT OPAQUE ===================== */
 
-    lemma HeaderAcceptedImpliesBlindRequest:
-    "All client beta1 beta2 #i.
-        HeaderAccepted(client, beta1, beta2) @ i
-        ==> Ex alpha1 alpha2 #j. ClientBlindRequest(client, alpha1, alpha2) @ j & j < i"
+rule OPAQUE_Login:
+  [ !ClientSKU(dfk0), Fr(~sk) ]
+  --[
+    ClientKeyEstablished(dfk0, ~sk),
+    ServerKeyEstablished(dfk0, ~sk),
+    Secret(~sk)
+  ]->
+  [ Sess(dfk0, ~sk) ]
 
-    lemma FileSecretSecrecy:
-    "All client dfk rwdu1 #i.
-        FileSecretReleased(client, dfk, rwdu1) @ i
-        ==> not (Ex #j. K(rwdu1) @ j)"
 
-    lemma SizeSecretSecrecy:
-    "All client fwHash rwdu2 #i.
-        SizeSecretReleased(client, fwHash, rwdu2) @ i
-        ==> not (Ex #j. K(rwdu2) @ j)"
-    
-    lemma SharedKeyNotLeakedDuringBlindFetch:
-    "All sk #i.
-        SharedKeyUsed(sk) @ i
-        ==> not (Ex #j. K(sk) @ j)"
+/* ===================== OPRF PHASE ===================== */
 
-    lemma LoginRequiredToDownload:
-    "All client alpha1 alpha2 #i.
-        ClientBlindRequest(client, alpha1, alpha2) @ i
-        ==> Ex sk #j. ClientKeyEstablished(client, sk) @ j & j < i"
-    
-    lemma ManifestAcceptedImpliesManifestSent:
-    "All client slotNumber fwHash sizeNonce actualSize #i.
-        ManifestAccepted(client, slotNumber, fwHash, sizeNonce, actualSize) @ i
-        ==> Ex encSize #j. ServerSentManifest(client, slotNumber, sizeNonce, encSize) @ j & j < i"
+rule Client_SendAlphas:
+  let
+    a1 = blind(dfk0, ~r1)
+    a2 = blind(slotid(dfk0), ~r2)
+  in
+  [ Sess(dfk0, sk), Fr(~r1), Fr(~r2) ]
+  -->
+  [ StWaitBetas(dfk0, sk, ~r1, ~r2),
+    Out(<a1, a2>) ]
 
-    lemma ChunkAcceptedImpliesChunkSent:
-    "All client blockNonce block #i.
-        ChunkAccepted(client, blockNonce, block) @ i
-        ==> Ex blockNonce encBlock #j. ChunkSent(client, blockNonce, encBlock) @ j & j < i"
-    
+rule Server_SendBetas:
+  [ !SrvKeys(kP,kS), In(<a1,a2>) ]
+  -->
+  [ Out(<eval(a1,kP), eval(a2,kS)>) ]
+
+rule Client_DeriveKeys:
+  let
+    sP    = unblind(r1,b1)
+    sS    = unblind(r2,b2)
+    Kpay  = kdf(sk, sP, tag_payload)
+    Ksize = kdf(sk, sS, tag_size)
+  in
+  [ StWaitBetas(dfk0, sk, r1, r2), In(<b1,b2>) ]
+  --[
+    DerivedKeys(dfk0, Kpay, Ksize),
+    Secret(Kpay),
+    Secret(Ksize)
+  ]->
+  [ !Keys(dfk0, sk, Kpay, Ksize) ]
+
+
+/* ===================== DESCRIPTORS ===================== */
+
+rule Server_SendDesc_Slot0:
+  let
+    sid0 = slotid(dfk0)
+    Ksize0 = kdf(sk, prf(kS, sid0), tag_size)
+    csize0 = aead(~size0, Ksize0, ~n0, aad_size(sid0))
+  in
+  [ !SrvKeys(kP,kS), Sess(dfk0,sk), Fr(~size0), Fr(~n0) ]
+  -->
+  [ Out(<sid0, ~n0, csize0>) ]
+
+rule Server_SendDesc_Slot1:
+  let
+    sid1 = slotid(dfk1)
+    Ksize1 = kdf(sk, prf(kS, sid1), tag_size)
+    csize1 = aead(~size1, Ksize1, ~n1, aad_size(sid1))
+  in
+  [ !SrvKeys(kP,kS), Sess(dfk0,sk), !OtherSKU(dfk1), Fr(~size1), Fr(~n1) ]
+  -->
+  [ Out(<sid1, ~n1, csize1>) ]
+
+/* -------- FORCED DECRYPTION (SIZE) -------- */
+
+rule Client_AcceptSize:
+  let
+    plaintext = aead_dec(csize, Ksize, n, aad_size(sid))
+  in
+  [ !Keys(dfk0, sk, Kpay, Ksize), In(<sid, n, csize>) ]
+  -->
+  [ AcceptedSizeOK(dfk0, sid, plaintext),
+    ClientAcceptedSize(dfk0, sid) ]
+
+
+/* ===================== PAYLOAD ===================== */
+
+rule Server_SendBlock:
+  let
+    sid0 = slotid(dfk0)
+    Kpay0 = kdf(sk, prf(kP, dfk0), tag_payload)
+    cblk = aead(~blk0, Kpay0, ~nB, aad_blk(sid0, idx0))
+  in
+  [ !SrvKeys(kP,kS), Sess(dfk0,sk), Fr(~blk0), Fr(~nB) ]
+  -->
+  [ Out(<sid0, idx0, ~nB, cblk>) ]
+
+/* -------- FORCED DECRYPTION (BLOCK) -------- */
+
+rule Client_AcceptBlock:
+  let
+    plaintext = aead_dec(cblk, Kpay, n, aad_blk(sid, idx0))
+  in
+  [ !Keys(dfk0, sk, Kpay, Ksize), In(<sid, idx0, n, cblk>) ]
+  -->
+  [ AcceptedBlockOK(dfk0, sid, idx0, plaintext),
+    ClientAcceptedBlock(dfk0, sid, idx0) ]
+
+
+/* ===================== LEMMAS ===================== */
+
+lemma SessionKeySecrecy:
+  "All sk #i.
+     Secret(sk) @ #i ==> not (Ex #j. K(sk) @ #j)"
+
+lemma DerivedKeySecrecy:
+  "All dfk0 Kpay Ksize #i.
+     DerivedKeys(dfk0, Kpay, Ksize) @ #i
+     ==> not (Ex #j. K(Kpay) @ #j)
+     &   not (Ex #k. K(Ksize) @ #k)"
+
+lemma SizeDecryptOne:
+  "All dfk0 sid #i.
+     ClientAcceptedSize(dfk0, sid) @ #i
+     ==> sid = slotid(dfk0)"
+
+lemma BlockAuth:
+  "All dfk0 sid idx #i.
+     ClientAcceptedBlock(dfk0, sid, idx) @ #i
+     ==> Ex #j. ServerSentBlock(sid, idx) @ #j"
+
 end
