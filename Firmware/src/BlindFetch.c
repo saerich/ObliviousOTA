@@ -188,7 +188,7 @@ void BlindDownloadFirmware(const char* downloadServerURL, const char* deviceFirm
         ResponseReadUpTo(c, sizeCrypt, sizeof(sizeCrypt));
 
         uint8_t slotAeadKey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
-        CalculateFirmwareFileKey(rwdU2, fwHash, skClient, slotAeadKey);
+        CalculateFirmwareSizeKey(rwdU2, fwHash, skClient, slotAeadKey);
         unsigned long long sizeRawLength = 0;
         uint8_t tmpActualSize[8];
         if(crypto_aead_chacha20poly1305_ietf_decrypt(tmpActualSize, &sizeRawLength, NULL, sizeCrypt, sizeof(sizeCrypt), NULL, 0, sizeNonce, slotAeadKey) == 0)

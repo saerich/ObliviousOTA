@@ -137,8 +137,8 @@ app.MapPost("/GenerateHeaders", async ctx =>
     await ctx.Request.Body.ReadExactlyAsync(unameBuf);
 
 
-    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
-    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
+    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfSeed);
+    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSeed);
     byte[]? userKey = null;
     string username = Encoding.UTF8.GetString(unameBuf);
 
@@ -244,8 +244,8 @@ app.MapPost("/Download", async ctx =>
     byte[] unameBuf = new byte[BitConverter.ToInt32(unameLen)];
     await ctx.Request.Body.ReadExactlyAsync(unameBuf);
 
-    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1);
-    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2);
+    byte[]? beta1 = InteropWrappers.SelectOPRFEvaluate(alpha1, oprfSeed);
+    byte[]? beta2 = InteropWrappers.SelectOPRFEvaluate(alpha2, oprfSeed);
     byte[]? userKey = null;
 
 
@@ -290,7 +290,7 @@ app.MapPost("/Download", async ctx =>
         byte[]? fwHash = InteropWrappers.CreateKeyFromSKUKey(userKey, File.ReadAllBytes(key));
         // headerMs.Write(fwHash ?? new byte[64]);
         long actualFileSize = new FileInfo($"Firmware/{Path.GetFileNameWithoutExtension(key)}.bin").Length;
-        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSeed, File.ReadAllBytes(key) ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
+        (byte[] Ciphertext, byte[] Nonce)? len = InteropWrappers.EncryptFirmwareSize(userKey, oprfSeed, fwHash ?? new byte[64], BitConverter.GetBytes(actualFileSize)); //24 bytes.
         if(len == null) 
         {
             ctx.Response.StatusCode = StatusCodes.Status403Forbidden; 

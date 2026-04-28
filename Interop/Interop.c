@@ -145,9 +145,10 @@ int EncryptFirmwareSize(const uint8_t skClient[OPAQUE_SHARED_SECRETBYTES], const
     
     memset(P, 0, sizeof(P));
     memset(N, 0, sizeof(N));
+    for (size_t i = 0; i < sizeof(rwdU); i++) { printf("%02X", rwdU[i]); }
+    printf("\n");
     memset(rwdU, 0, sizeof(rwdU));
     memset(aeadKey, 0, sizeof(aeadKey));
-
     return cLen == (24) ? 0 : -1;
 
 }

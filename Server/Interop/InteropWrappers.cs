@@ -68,11 +68,10 @@ internal class InteropWrappers
         return valid;
     }
 
-    internal static byte[]? SelectOPRFEvaluate(byte[] alpha)
+    internal static byte[]? SelectOPRFEvaluate(byte[] alpha, byte[] seed)
     {
-        byte[] sk = File.ReadAllBytes($"opaqueseed");
         byte[] beta = new byte[32];
-        if(Interop.SelectOPRFEvaluate(alpha, sk, beta) != 0) { return null;} 
+        if(Interop.SelectOPRFEvaluate(alpha, seed, beta) != 0) { return null;} 
         return beta;
     }
 
