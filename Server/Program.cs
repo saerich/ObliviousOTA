@@ -1,3 +1,6 @@
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.AspNetCore.Components.Web;
 using ObliviousOTA.Interop;
@@ -172,7 +175,7 @@ app.MapPost("/GenerateHeaders", async ctx =>
 
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
-    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); 
+    ctx.Response.ContentLength = 68L + (firmwareCount * 36L) + (firmwareCount * 4096L * 1052L); 
 
     using MemoryStream headerMs = new();
     headerMs.Write(beta1);
@@ -281,7 +284,7 @@ app.MapPost("/Download", async ctx =>
 
     ctx.Response.ContentType = "application/octet-stream";
     ctx.Response.StatusCode = 200;
-    ctx.Response.ContentLength = 68L + (firmwareCount * 100L) + (firmwareCount * 4096L * 1052L); //100L = size header size, 4096L = blocks, 1025L = blockSize, 68L = beta 1, 2 and number of firmware.
+    ctx.Response.ContentLength = 68L + (firmwareCount * 36L) + (firmwareCount * 4096L * 1052L); //36L = size header size, 4096L = blocks, 1025L = blockSize, 68L = beta 1, 2 and number of firmware.
     
     // ctx.Response.Headers.TransferEncoding = "identity";
     using MemoryStream headerMs = new();
