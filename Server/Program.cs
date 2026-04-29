@@ -58,7 +58,7 @@ if(!File.Exists("oprffileseed"))
 }
 else
 {
-    oprfFileSeed = File.ReadAllBytes("oprfseed");
+    oprfFileSeed = File.ReadAllBytes("oprffileseed");
 }
 byte[] oprfSizeSeed = new byte[Interop.crypto_scalarmult_SCALARBYTES];
 
