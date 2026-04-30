@@ -70,5 +70,6 @@ Modify the ```./Firmware/platformio.ini```'s ```build_flags``` section to config
 - Add -DHEADERONLY to trigger the header generation endpoint on the server for creating a server-side log of header block data.
 - Add -DPlainOTA to trigger the non-Blind-Fetch OTA process.
 - Add -DSEND_KTVS to create a log of the username, alphas, betas, n and rwdUs, absorbed blocks, real blocks, device key and firmware hash on the server's ```./Server/Logs``` folder. 
+- Add -DAPPLY_FIRMWARE to write the firmware to the OTA partition and restart.
 
 Run the firmware on-device or emulator using ```pio run --target upload --target monitor --environment esp32dev ``` or the VSCode ```upload and monitor``` flags.
