@@ -36,3 +36,39 @@ This also will log the Averages (mean) to console.
 To reproduce the symbolic proofs: <br />
 ```tamarin-prover --prove ./Proofs/proof.spthy``` <br />
 Expected resut: All lemmas verified. One standard subterm convergence warning for OPRF correctness.
+
+## Execution
+### Requirements
+#### Server
+Ubuntu 24.04 or later, ```apt-get install -y build-essential cmake pkg-config libsodium-dev``` <br />
+Additionally, if not using the docker image to run the server, ensure you have the [C# .NET 10 SDK](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install?tabs=dotnet10&pivots=os-linux-ubuntu-2404)<br />
+```openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes -keyout ./Server/esp.key -out ./Server/esp.crt -subj "/CN=1.2.3.4"``` Replacing 1.2.3.4 with the IP or name of the node running the server.<br />
+```openssl pkcs12 export -out ./Server/esp.pfx -inkey ./Server/esp.key -in ./Server/esp.crt -password pass:passwordfortlscert``` Replacing passwordfortlscert with a secure password. <br />
+Set the environment variable ```BLIND_FETCH_TLS_PASSWORD``` to the secure TLS password. ```echo 'export BLIND_FETCH_TLS_PASSWORD=passwordfortlscert' >> ~/.bashrc && source ~/.bashrc``` again replacing passwordfortlscert with the secure TLS password selected. <br />
+Copy the esp.crt into the firmware ```cp ./Server/esp.crt ./Firmware/certs/esp.crt```. <br />
+Build the interop package ```cd Interop && cmake --build build && cd ..``` This will automatically place it in the Server directory.<br />
+Place n firmware files in ```./Server/Firmware```, where n is the number of slots, Ensure they have the .bin extension, and the name does not contain spaces, we suggest naming each firmware file according to the SKU of the device that should receive it. <br />
+Generate one SKU key/identifier per firmware: ```head -c 32 /dev/urandom > ./Server/Keys/SKU.k``` replacing SKU with the chosen name of each firmware file. <br />
+For generating plain metadata, additionally place a file called firmware.bin in ```./Server/PlainFirmware```. <br />
+To run BlindFetch's server in ```Ordered``` mode, you must add ```#define ORDERED``` to the first line in ```./Server/Program.cs```, or alternatively build with ```dotnet build -p:DefineConstants=ORDERED```. <br />
+```dotnet run``` should run the server, from the ./Server directory.
+
+#### Firmware
+The firmware is deployed using ```PlaformIO```, which is available [as both an extension for ```vscode``` or as a standalone IDE.](https://platformio.org/install) <br />
+This firmware has been tested on the ```ESP32-WROOM-32D``` and ```ESP32-WROOM-32E``` modules, mileage may vary with the ```ESP32-S3```, ```ESP32-C5``` and ```ESP32-C6``` variants due to differences with UART handling. <br />
+Create a ./Firmware/.env file with the following properties:
+- WIFI_PASSWORD=```Password for the given SSID```
+- WIFI_SSID=```SSID of the network for the device to connect to.```
+- OPAQUE_PASSWORD=```Any random, secure password, should be unique to this device.```
+- OPAQUE_SERVER_URL=```URL in the format: https://UrlUsedByServer:PortIfNecessary```
+- FIRMWARE_KEY=```Any one of the firmware keys generated when setting up the server from the ./Server/Keys/SKU.k files, in hex format eg. (8A50750EABCB16D60530D5A832DE58FEE4163176EE7867AD761CBE7CB9F1AC0F)```
+
+Modify the ```./Firmware/platformio.ini```'s ```build_flags``` section to configure the following options in BlindFetch
+- **DO NOT** remove -DESPRESSIF_ESP32 from the build flags.
+- Add -DEarlyClose to run in a Close-Early configuration.
+- Add -DMEMETRACE to receive heap high and low on UART output.
+- Add -DHEADERONLY to trigger the header generation endpoint on the server for creating a server-side log of header block data.
+- Add -DPlainOTA to trigger the non-Blind-Fetch OTA process.
+- Add -DSEND_KTVS to create a log of the username, alphas, betas, n and rwdUs, absorbed blocks, real blocks, device key and firmware hash on the server's ```./Server/Logs``` folder. 
+
+Run the firmware on-device or emulator using ```pio run --target upload --target monitor --environment esp32dev ``` or the VSCode ```upload and monitor``` flags.
