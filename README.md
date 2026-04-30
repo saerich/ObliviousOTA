@@ -32,7 +32,7 @@ The timing information is provided by <br />
 ```python3 ./Scripts/timing.py```<br />
 This also will log the Averages (mean) to console.
 
-### Formal Verification
+## Formal Verification
 To reproduce the symbolic proofs: <br />
 ```tamarin-prover --prove ./Proofs/proof.spthy``` <br />
 Expected resut: All lemmas verified. One standard subterm convergence warning for OPRF correctness.
