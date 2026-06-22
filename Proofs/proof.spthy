@@ -118,14 +118,10 @@ rule Server_SendDesc_Slot1:
   [ Out(<sid1, ~n1, csize1>) ]
 
 rule Client_AcceptSize:
-  let
-    size = aead_dec(csize, Ksize, n, aad_size(sid))
-  in
   [ !Keys(dfk0, sk, Kpay, Ksize),
-    In(<sid, n, csize>) ]
+    In(<sid, n, aead(size, Ksize, n, aad_size(sid))>) ]
   -->
   [ ClientAcceptedSize(dfk0, sid) ]
-
 
 /* ===================== PAYLOAD ===================== */
 
@@ -139,18 +135,14 @@ rule Server_SendBlock:
   [ !OPRF_Payload_Secret(kP),
     Sess(dfk0,sk),
     Fr(~blk0), Fr(~nB) ]
-  -->
+  --[ ServerSentBlock(sid0, idx0) ]->
   [ Out(<sid0, idx0, ~nB, cblk>) ]
 
 rule Client_AcceptBlock:
-  let
-    blk = aead_dec(cblk, Kpay, n, aad_blk(sid, idx0))
-  in
   [ !Keys(dfk0, sk, Kpay, Ksize),
-    In(<sid, idx0, n, cblk>) ]
+    In(<sid, idx0, n, aead(blk, Kpay, n, aad_blk(sid, idx0))>) ]
   -->
   [ ClientAcceptedBlock(dfk0, sid, idx0) ]
-
 
 /* ===================== LEMMAS ===================== */
 
@@ -173,5 +165,14 @@ lemma BlockAuth:
   "All dfk0 sid idx #i.
      ClientAcceptedBlock(dfk0, sid, idx) @ #i
      ==> Ex #j. ServerSentBlock(sid, idx) @ #j"
+     
+lemma BlockDecryptOne:
+  "All dfk0 sid idx #i.
+     ClientAcceptedBlock(dfk0, sid, idx) @ #i
+     ==> sid = slotid(dfk0)"
 
+lemma SizeAuth:
+  "All dfk0 sid #i.
+     ClientAcceptedSize(dfk0, sid) @ #i
+     ==> Ex #j. ServerSentSize(sid) @ #j"
 end

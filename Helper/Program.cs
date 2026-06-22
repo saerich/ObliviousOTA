@@ -1,4 +1,5 @@
-﻿// //BBT01|LB01|PSC01|SLM01
+﻿#define ConstructMergedExecutions
+// //BBT01|LB01|PSC01|SLM01
 #if ConstructMergedExecutions
 string[] orderedCloseEarlyExec =
     [.. File.ReadAllLines("../Data/OrderedExecutionsCloseEarlyBBT01.csv").Skip(1).Select(x => $"0,{x}")
@@ -25,7 +26,7 @@ string[] unorderedFixedExec = [.. File.ReadAllLines("../Data/UnorderedExecutions
 string outFile = "../Data/MergedExecutions.csv";
 
 if(File.Exists(outFile)) { File.Delete(outFile); }
-File.WriteAllText(outFile, "Mode,Ordering,Slots,TTFB Miliseconds,TTLB Miliseconds,Blocks,Id,ActualSlot\n");
+File.WriteAllText(outFile, "Mode,Ordering,Slots,TTFB Miliseconds,TTLB Miliseconds,Blocks,Id,ActualSlot,Slot0,Slot1,Slot2,Slot3\n");
 
 if(orderedCloseEarlyExec.Length == unorderedCloseEarlyExec.Length && orderedFixedExec.Length == unorderedFixedExec.Length && orderedFixedExec.Length == unorderedCloseEarlyExec.Length)
 {
@@ -39,12 +40,17 @@ if(orderedCloseEarlyExec.Length == unorderedCloseEarlyExec.Length && orderedFixe
         string[] unorderedFixedBudgetRow = unorderedFixedExec[i].Split(",");
         int actualPositionUFB = unorderedFixedBudgetRow.ElementAt(5).Replace("[", "").Replace("]", "").Split("|").IndexOf(unorderedFixedBudgetRow.ElementAt(0));
 
+        string[] orderedEarlyCloseSlots = orderedCloseEarlyRow.ElementAt(5).Replace("[", "").Replace("]", "").Split("|");
+        string[] unorderedEarlyCloseSlots = unorderedCloseEarlyRow.ElementAt(5).Replace("[", "").Replace("]", "").Split("|");
+        string[] orderedFixedBudgetSlots = orderedFixedBudgetRow.ElementAt(5).Replace("[", "").Replace("]", "").Split("|");
+        string[] unorderedFixedBudgetSlots = unorderedFixedBudgetRow.ElementAt(5).Replace("[", "").Replace("]", "").Split("|");
+
         string[] file = 
         [
-            $"EarlyClose,Ordered,4,{TimeSpan.Parse(orderedCloseEarlyRow[2]).TotalMilliseconds},{TimeSpan.Parse(orderedCloseEarlyRow[7]).TotalMilliseconds},{orderedCloseEarlyRow[4]},{counter++},{orderedCloseEarlyRow[0]}",
-            $"EarlyClose,Unordered,4,{TimeSpan.Parse(unorderedCloseEarlyRow[2]).TotalMilliseconds},{TimeSpan.Parse(unorderedCloseEarlyRow[7]).TotalMilliseconds},{unorderedCloseEarlyRow[4]},{counter++},{actualPositionUCE}",
-            $"FixedBudget,Ordered,4,{TimeSpan.Parse(orderedFixedBudgetRow[2]).TotalMilliseconds},{TimeSpan.Parse(orderedFixedBudgetRow[3]).TotalMilliseconds},{orderedFixedBudgetRow[4]},{counter++},{orderedFixedBudgetRow[0]}",
-            $"FixedBudget,Unordered,4,{TimeSpan.Parse(unorderedFixedBudgetRow[2]).TotalMilliseconds},{TimeSpan.Parse(unorderedFixedBudgetRow[3]).TotalMilliseconds},{unorderedFixedBudgetRow[4]},{counter++},{actualPositionUFB}"
+            $"EarlyClose,Ordered,4,{TimeSpan.Parse(orderedCloseEarlyRow[2]).TotalMilliseconds},{TimeSpan.Parse(orderedCloseEarlyRow[7]).TotalMilliseconds},{orderedCloseEarlyRow[4]},{counter++},{orderedCloseEarlyRow[0]},{orderedEarlyCloseSlots[0]},{orderedEarlyCloseSlots[1]},{orderedEarlyCloseSlots[2]},{orderedEarlyCloseSlots[3]}",
+            $"EarlyClose,Unordered,4,{TimeSpan.Parse(unorderedCloseEarlyRow[2]).TotalMilliseconds},{TimeSpan.Parse(unorderedCloseEarlyRow[7]).TotalMilliseconds},{unorderedCloseEarlyRow[4]},{counter++},{actualPositionUCE},{unorderedEarlyCloseSlots[0]},{unorderedEarlyCloseSlots[1]},{unorderedEarlyCloseSlots[2]},{unorderedEarlyCloseSlots[3]}",
+            $"FixedBudget,Ordered,4,{TimeSpan.Parse(orderedFixedBudgetRow[2]).TotalMilliseconds},{TimeSpan.Parse(orderedFixedBudgetRow[3]).TotalMilliseconds},{orderedFixedBudgetRow[4]},{counter++},{orderedFixedBudgetRow[0]},{orderedFixedBudgetSlots[0]},{orderedFixedBudgetSlots[1]},{orderedFixedBudgetSlots[2]},{orderedFixedBudgetSlots[3]}",
+            $"FixedBudget,Unordered,4,{TimeSpan.Parse(unorderedFixedBudgetRow[2]).TotalMilliseconds},{TimeSpan.Parse(unorderedFixedBudgetRow[3]).TotalMilliseconds},{unorderedFixedBudgetRow[4]},{counter++},{actualPositionUFB},{unorderedFixedBudgetSlots[0]},{unorderedFixedBudgetSlots[1]},{unorderedFixedBudgetSlots[2]},{unorderedFixedBudgetSlots[3]}"
         ];
 
         File.AppendAllLines(outFile, file);
